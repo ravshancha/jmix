@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <menu-config xmlns="http://jmix.io/schema/flowui/menu">
 
-    <menu id="application" title="msg://uz.kapitalbank.umida/menu.application.title" opened="true">
+    <menu opened="true" id="application" title="msg://uz.kapitalbank.umida/menu.application.title">
         <item view="umida_User.list" title="msg://uz.kapitalbank.umida.view.user/UserListView.title"/>
+        <menu opened="true" id="catalog" description="msg://uz.kapitalbank.umida/menu_config.catalog.description"
+              title="msg://uz.kapitalbank.umida/menu_config.catalog.title">
+            <item view="umida_DealType.list" title="msg://uz.kapitalbank.umida.view.dealtype/dealTypeListView.title"/>
+            <item view="umida_Currency.list" title="msg://uz.kapitalbank.umida.view.currency/currencyListView.title"/>
+        </menu>
     </menu>
-
 </menu-config>
