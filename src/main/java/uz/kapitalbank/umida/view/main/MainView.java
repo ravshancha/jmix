@@ -1,5 +1,9 @@
 package uz.kapitalbank.umida.view.main;
 
+import com.vaadin.flow.component.UI;
+import io.jmix.flowui.kit.action.ActionPerformedEvent;
+import io.jmix.flowui.kit.theme.ThemeUtils;
+import io.jmix.flowui.view.Subscribe;
 import uz.kapitalbank.umida.entity.User;
 import com.google.common.base.Strings;
 import com.vaadin.flow.component.Component;
@@ -29,6 +33,16 @@ public class MainView extends StandardMainView {
     private UiComponents uiComponents;
     @Autowired
     private CurrentUserSubstitution currentUserSubstitution;
+
+    @Subscribe("themeSwitcher.lightThemeItem.lightThemeAction")
+    public void onThemeSwitcherLightThemeItemLightThemeAction(final ActionPerformedEvent event) {
+        UI.getCurrent().getElement().setAttribute("theme", "light");
+    }
+
+    @Subscribe("themeSwitcher.darkThemeItem.darkThemeAction")
+    public void onThemeSwitcherDarkThemeItemDarkThemeAction(final ActionPerformedEvent event) {
+        UI.getCurrent().getElement().setAttribute("theme", "dark");
+    }
 
     @Install(to = "userMenu", subject = "buttonRenderer")
     private Component userMenuButtonRenderer(final UserDetails userDetails) {

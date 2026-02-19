@@ -13,6 +13,21 @@
                               ariaLabel="msg://drawerToggle.ariaLabel"/>
                 <h1 id="viewTitle" classNames="jmix-main-view-title"/>
 
+                <dropdownButton id="themeSwitcher"
+                                text="Theme" icon="ADJUST"
+                                classNames="ms-auto me-m"
+                                dropdownIndicatorVisible="false">
+                    <items>
+                        <actionItem id="lightThemeItem">
+                            <action id="lightThemeAction"
+                                    text="Light" icon="SUN_O"/>
+                        </actionItem>
+                        <actionItem id="darkThemeItem">
+                            <action id="darkThemeAction"
+                                    text="Dark" icon="MOON_O"/>
+                        </actionItem>
+                    </items>
+                </dropdownButton>
                 <userMenu id="userMenu"
                           themeNames="tertiary" classNames="ms-auto me-m">
                     <items>

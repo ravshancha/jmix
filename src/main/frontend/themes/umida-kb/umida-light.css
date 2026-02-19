@@ -1,0 +1,585 @@
+/* ===== Light (по умолчанию) ===== */
+:root {
+
+    /* Primary brand color */
+    --lumo-primary-color: #FBD30E;
+    --lumo-primary-color-50pct: rgba(251, 211, 14, 0.5);
+    --lumo-primary-color-10pct: rgba(251, 211, 14, 0.1);
+
+    --lumo-primary-text-color: #000000;
+
+    /* Shade */
+    --lumo-primary-color-shade-5pct: #F6C800;
+    --lumo-primary-color-shade-10pct: #E1B905;
+    --lumo-primary-color-shade-20pct: #C8A404;
+
+    /* SECONDARY */
+    --app-secondary-color: #F7D542;
+    --app-secondary-color-shade: #A5C30D;
+
+    /* Success */
+    --lumo-success-color: #A5C30D;
+
+    /* Base layout */
+    --lumo-base-color: #ffffff;
+    --lumo-body-text-color: #000000;
+    --lumo-secondary-text-color: #000000;
+
+    /* DIM / subtle backgrounds */
+    --lumo-primary-color-5pct: rgba(251, 211, 14, 0.05);
+
+    /* Links */
+    --lumo-link-color: #FBD30E;
+
+    /* Error (если нужно) */
+    --lumo-error-color: #d32f2f;
+}
+
+
+/* ================================= */
+/* AppMenu                           */
+/* ================================= */
+vaadin-menu-bar-item[expanded],
+vaadin-menu-bar-item[active] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-menu-bar-item:hover {
+    background-color: rgba(251, 211, 14, 0.15);
+}
+
+
+/* ================================= */
+/* Accordion                         */
+/* ================================= */
+
+/* Обычный текст */
+vaadin-accordion-panel::part(summary) {
+    color: #000000;
+}
+
+/* Hover */
+vaadin-accordion-panel::part(summary):hover {
+    color: #000000;
+}
+
+/* Opened (active) */
+vaadin-accordion-panel[opened]::part(summary) {
+    color: #000000;
+}
+
+vaadin-accordion-panel::part(toggle) {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* Button                            */
+/* ================================= */
+
+vaadin-button {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-button:hover {
+    background-color: #E1B905;
+}
+vaadin-button:active {
+    background-color: #C8A404;
+}
+vaadin-button[disabled] {
+    background-color: #FBDC50;
+    color: #000000;
+    opacity: 1;
+}
+vaadin-button:focus-visible {
+    box-shadow: 0 0 0 2px #FBD30E;
+}
+vaadin-button[theme~="primary"] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-button[theme~="primary"]:hover {
+    background-color: #E1B905;
+}
+vaadin-button[theme~="primary"]:active {
+    background-color: #C8A404;
+}
+vaadin-button[theme~="tertiary"] {
+    color: #000000;
+}
+
+/* ================================= */
+/* Calendar                          */
+/* ================================= */
+vaadin-month-calendar::part(date):hover {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-month-calendar::part(today) {
+    background-color: rgba(251, 211, 14, 0.15);
+    border: 1px solid #FBD30E;
+    color: #FBD30E;
+}
+vaadin-month-calendar::part(selected) {
+    background-color: #FBD30E;
+    color: #000000;
+}
+.fc-event {
+    background-color: #FBD30E;
+    border-color: #FBD30E;
+    color: #000000;
+}
+.fc-timegrid-now-indicator-line {
+    border-color: #FBD30E;
+}
+.fc-timegrid-now-indicator-arrow {
+    border-top-color: #FBD30E;
+}
+
+
+/* ================================= */
+/* CheckBox                          */
+/* ================================= */
+vaadin-checkbox[checked]::part(checkbox) {
+    background-color: #FBD30E;
+    border-color: #FBD30E;
+}
+vaadin-checkbox[checked]:focus-visible::part(checkbox) {
+    box-shadow: 0 0 0 2px #FBD30E;
+}
+vaadin-checkbox[checked]:hover::part(checkbox) {
+    background-color: #E1B905;
+}
+
+/* ================================= */
+/* ComboBox                          */
+/* ================================= */
+vaadin-combo-box::part(input-field) {
+    color: #000000;
+}
+vaadin-combo-box::part(toggle-button) {
+    color: #000000;
+}
+vaadin-combo-box-overlay::part(content) {
+    color: #000000;
+}
+vaadin-combo-box-item[selected] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-combo-box::part(helper-text),
+vaadin-combo-box::part(error-message) {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* CurrencyField                     */
+/* ================================= */
+vaadin-text-field::part(input-field) {
+    color: #000000;
+}
+vaadin-text-field[readonly]::part(input-field) {
+    color: #000000;
+    opacity: 1; /* чтобы не был серым */
+}
+vaadin-text-field,
+vaadin-number-field {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* DateField                         */
+/* ================================= */
+vaadin-date-picker::part(input-field) {
+    color: #000000;
+}
+vaadin-date-picker::part(toggle-button) {
+    color: #000000;
+}
+vaadin-month-calendar::part(date):hover {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-month-calendar::part(focused) {
+    border: 1px solid #FBD30E;
+}
+vaadin-month-calendar::part(selected) {
+    background-color: #FBD30E;
+    color: #000000;
+}
+
+
+/* ================================= */
+/* Drawer                         */
+/* ================================= */
+vaadin-app-layout::part(drawer) {
+    color: #000000;
+}
+vaadin-app-layout::part(drawer) a {
+    color: #000000;
+}
+jmix-side-menu {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* FileUpload                        */
+/* ================================= */
+vaadin-upload[dragover]::part(drop-label) {
+    border-color: #FBD30E;
+    background-color: rgba(251, 211, 14, 0.1);
+}
+vaadin-upload::part(drop-label) {
+    border: 2px dashed #FBD30E;
+}
+
+
+/* ================================= */
+/* Grid                              */
+/* ================================= */
+vaadin-grid::part(selected-row) {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-grid::part(focused-cell) {
+    box-shadow: inset 0 0 0 2px #FBD30E;
+}
+vaadin-grid::part(row):hover {
+    color: #000000;
+}
+vaadin-grid::part(editor-cell) {
+    border: 1px solid #FBD30E;
+}
+vaadin-grid::part(drop-marker) {
+    background-color: #FBD30E;
+}
+vaadin-grid::part(dragstart-row) {
+    background-color: #FBD30E;
+    border-color: #FBD30E;
+}
+vaadin-grid::part(details-cell) {
+    border-left: 3px solid #FBD30E;
+}
+vaadin-grid vaadin-button[theme~="primary"] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+
+
+/* ================================= */
+/* GroupBox                          */
+/* ================================= */
+vaadin-details::part(summary) {
+    color: #000000;
+}
+vaadin-details:not([opened])::part(summary) {
+    color: #000000;
+}
+vaadin-details[opened]::part(summary) {
+    color: #000000;
+}
+vaadin-accordion-panel::part(summary) {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* Link                              */
+/* ================================= */
+a {
+    color: #FBD30E;
+}
+a:visited {
+    color: #FBD30E;
+}
+a:hover {
+    color: #E1B905;
+}
+a[router-link] {
+    color: #FBD30E;
+}
+
+
+/* ================================= */
+/* Notification                      */
+/* ================================= */
+vaadin-notification-card {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-notification-card[theme~="primary"] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+
+
+/* ================================= */
+/* Pagination                        */
+/* ================================= */
+jmix-pagination vaadin-button {
+    background-color: #FBD30E;
+    color: #000000;
+}
+jmix-pagination vaadin-button:hover {
+    background-color: #E1B905;
+}
+jmix-pagination vaadin-button:active {
+    background-color: #C8A404;
+}
+jmix-pagination vaadin-button[disabled] {
+    background-color: #FBDC50;
+    color: #000000;
+    opacity: 1;
+}
+jmix-pagination vaadin-button[theme~="primary"] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+jmix-pagination vaadin-button:focus-visible {
+    box-shadow: 0 0 0 2px #FBD30E;
+}
+
+
+/* ================================= */
+/* PickerField                        */
+/* ================================= */
+jmix-entity-picker vaadin-button,
+jmix-value-picker vaadin-button {
+    color: #000000;
+}
+jmix-entity-picker vaadin-button:hover,
+jmix-value-picker vaadin-button:hover {
+    color: #000000;
+}
+jmix-entity-picker::part(action-button),
+jmix-value-picker::part(action-button) {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* RadioButtonGroup                  */
+/* ================================= */
+vaadin-radio-button[checked]::part(radio) {
+    background-color: #FBD30E;
+    border-color: #FBD30E;
+}
+vaadin-radio-button[checked]:focus-visible::part(radio) {
+    box-shadow: 0 0 0 2px #FBD30E;
+}
+vaadin-radio-button[checked]:hover::part(radio) {
+    background-color: #E1B905;
+}
+
+
+/* ================================= */
+/* RichTextArea                      */
+/* ================================= */
+vaadin-rich-text-editor::part(toolbar) {
+    color: #000000;
+}
+vaadin-rich-text-editor::part(toolbar) button {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* SelectionOverlay (ContextMenu)    */
+/* ================================= */
+vaadin-context-menu-item[selected] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-context-menu-item:hover {
+    background-color: rgba(251, 211, 14, 0.15);
+}
+
+
+/* ================================= */
+/* SideMenu (ContextMenu)            */
+/* ================================= */
+jmix-side-menu vaadin-button {
+    color: #000000;
+}
+jmix-side-menu::part(toggle-button) {
+    color: #000000;
+}
+jmix-side-menu .badge {
+    background-color: #FBD30E;
+    color: #000000;
+}
+jmix-side-menu a:focus-visible {
+    background-color: #FBD30E;
+    color: #000000;
+}
+jmix-side-menu a[selected] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+jmix-side-menu a[aria-current="page"] {
+    background-color: #FBD30E;
+    color: #000000;
+}
+
+
+/* ================================= */
+/* SourceCodeEditor                  */
+/* ================================= */
+jmix-source-code-editor .cm-content {
+    color: #000000;
+}
+jmix-source-code-editor .cm-cursor {
+    border-left-color: #000000;
+}
+jmix-source-code-editor .cm-selectionBackground {
+    background-color: rgba(251, 211, 14, 0.3);
+}
+
+
+/* ================================= */
+/* SplitPanel                        */
+/* ================================= */
+vaadin-split-layout + vaadin-button {
+    color: #000000;
+}
+vaadin-split-layout vaadin-button {
+    color: #000000;
+}
+vaadin-button[theme~="tertiary"] {
+    color: #000000;
+}
+vaadin-split-layout::part(splitter) {
+    background-color: #FBD30E;
+}
+vaadin-split-layout::part(splitter):hover {
+    background-color: #E1B905;
+}
+
+
+/* ================================= */
+/* TabSheet                          */
+/* ================================= */
+vaadin-tab {
+    color: #000000;
+}
+vaadin-tab:hover {
+    color: #FBD30E;
+}
+vaadin-tab:focus-visible {
+    color: #FBD30E;
+}
+vaadin-tab[selected] {
+    color: #FBD30E;
+}
+vaadin-tabs::part(selection-bar) {
+    background-color: #FBD30E;
+}
+vaadin-tabs::part(drop-indicator) {
+    background-color: #FBD30E;
+}
+vaadin-tabs::part(back-button),
+vaadin-tabs::part(forward-button) {
+    color: #000000;
+}
+vaadin-tabs::part(back-button):hover,
+vaadin-tabs::part(forward-button):hover {
+    color: #FBD30E;
+}
+
+
+/* ================================= */
+/* Table                             */
+/* ================================= */
+vaadin-grid::part(selected-row) {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-grid::part(focused-cell) {
+    box-shadow: inset 0 0 0 2px #FBD30E;
+}
+vaadin-grid::part(row):hover {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* TagField                          */
+/* ================================= */
+vaadin-multi-select-combo-box-chip {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-multi-select-combo-box-chip::part(remove-button) {
+    color: #000000;
+}
+vaadin-multi-select-combo-box::part(clear-button) {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* TagLabel                          */
+/* ================================= */
+.tag-label {
+    background-color: #FBD30E;
+    color: #000000;
+}
+
+
+/* ================================= */
+/* TagPicker                         */
+/* ================================= */
+jmix-tag-picker vaadin-multi-select-combo-box-chip {
+    background-color: #FBD30E;
+    color: #000000;
+}
+jmix-tag-picker vaadin-multi-select-combo-box-chip::part(remove-button) {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* TextField                         */
+/* ================================= */
+vaadin-text-field[readonly]::part(input-field) {
+    color: #000000;
+}
+vaadin-text-field[readonly]::part(input-field),
+vaadin-number-field[readonly]::part(input-field),
+vaadin-date-picker[readonly]::part(input-field),
+vaadin-combo-box[readonly]::part(input-field) {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* Tooltip                           */
+/* ================================= */
+vaadin-tooltip::part(content) {
+    color: #000000;
+}
+vaadin-text-field::part(error-message),
+vaadin-date-picker::part(error-message),
+vaadin-combo-box::part(error-message),
+vaadin-number-field::part(error-message) {
+    color: #FBD30E;
+}
+vaadin-text-field::part(helper-text) {
+    color: #000000;
+}
+
+
+/* ================================= */
+/* Tree                              */
+/* ================================= */
+vaadin-tree-grid::part(selected-row) {
+    background-color: #FBD30E;
+    color: #000000;
+}
+vaadin-tree-grid::part(focused-cell) {
+    box-shadow: inset 0 0 0 2px #FBD30E;
+}
