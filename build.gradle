@@ -43,10 +43,6 @@ dependencies {
 
     implementation 'io.jmix.groupgrid:jmix-groupgrid-flowui-starter'
 
-    implementation 'io.jmix.rest:jmix-rest-starter'
-
-    implementation 'de.bytestore:swagger-ui-starter:2.7.0'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
 
     implementation 'io.jmix.email:jmix-email-flowui-starter'
     implementation 'io.jmix.email:jmix-email-starter'

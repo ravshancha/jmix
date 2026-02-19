@@ -34,8 +34,7 @@
     "lit": "3.3.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router": "7.12.0",
-    "swagger-ui": "5.25.2"
+    "react-router": "7.12.0"
   },
   "devDependencies": {
     "@babel/preset-react": "7.27.1",
@@ -91,8 +90,7 @@
       "lit": "3.3.2",
       "react": "18.3.1",
       "react-dom": "18.3.1",
-      "react-router": "7.12.0",
-      "swagger-ui": "5.25.2"
+      "react-router": "7.12.0"
     },
     "devDependencies": {
       "@babel/preset-react": "7.27.1",
@@ -115,7 +113,7 @@
       "workbox-core": "7.3.0",
       "workbox-precaching": "7.3.0"
     },
-    "hash": "eac208cc74cd25158d3d9a13285f8438a671911e152694a02ffc9f6358f0eee1"
+    "hash": "755222e2eab9ae04eeb6f069e59c772f8548d652bed9bd3069c4c33dbc5f6fdd"
   },
   "overrides": {
     "@vaadin/bundles": "$@vaadin/bundles",
@@ -148,7 +146,6 @@
     "@vaadin/vaadin-lumo-styles": "$@vaadin/vaadin-lumo-styles",
     "grapesjs-tooltip": "$grapesjs-tooltip",
     "@vaadin/vaadin-material-styles": "$@vaadin/vaadin-material-styles",
-    "swagger-ui": "$swagger-ui",
     "grapesjs-tabs": "$grapesjs-tabs",
     "grapesjs-tui-image-editor": "$grapesjs-tui-image-editor",
     "@vaadin/a11y-base": "24.9.9",
