@@ -13,21 +13,21 @@
                               ariaLabel="msg://drawerToggle.ariaLabel"/>
                 <h1 id="viewTitle" classNames="jmix-main-view-title"/>
 
-                <dropdownButton id="themeSwitcher"
-                                text="Theme" icon="ADJUST"
-                                classNames="ms-auto me-m"
-                                dropdownIndicatorVisible="false">
-                    <items>
-                        <actionItem id="lightThemeItem">
-                            <action id="lightThemeAction"
-                                    text="Light" icon="SUN_O"/>
-                        </actionItem>
-                        <actionItem id="darkThemeItem">
-                            <action id="darkThemeAction"
-                                    text="Dark" icon="MOON_O"/>
-                        </actionItem>
-                    </items>
-                </dropdownButton>
+<!--                <dropdownButton id="themeSwitcher"-->
+<!--                                text="Theme" icon="ADJUST"-->
+<!--                                classNames="ms-auto me-m"-->
+<!--                                dropdownIndicatorVisible="false">-->
+<!--                    <items>-->
+<!--                        <actionItem id="lightThemeItem">-->
+<!--                            <action id="lightThemeAction"-->
+<!--                                    text="Light" icon="SUN_O"/>-->
+<!--                        </actionItem>-->
+<!--                        <actionItem id="darkThemeItem">-->
+<!--                            <action id="darkThemeAction"-->
+<!--                                    text="Dark" icon="MOON_O"/>-->
+<!--                        </actionItem>-->
+<!--                    </items>-->
+<!--                </dropdownButton>-->
                 <userMenu id="userMenu"
                           themeNames="tertiary" classNames="ms-auto me-m">
                     <items>
@@ -49,8 +49,9 @@
                     classNames="jmix-main-view-application-title">
                     <anchor id="baseLink"
                             href="."
-                            text="msg://applicationTitle.text"
-                            classNames="jmix-main-view-application-title-base-link"/>
+                            classNames="jmix-main-view-application-title-base-link">
+                        <image resource="public/images/logo.png" classNames="jmix-navigationbar-logo"/>
+                    </anchor>
                 </h2>
                 <nav id="navigation"
                      classNames="jmix-main-view-navigation"
@@ -61,10 +62,6 @@
         </drawerLayout>
         <initialLayout id="initialLayout" classNames="jmix-initial-layout">
             <div classNames="jmix-initial-layout-content">
-                <h1 text="msg://applicationTitle.text"
-                    classNames="jmix-initial-layout-title"/>
-                <image resource="public/images/logo.png"
-                       classNames="jmix-initial-layout-logo"/>
             </div>
             <!--
                 This is the work area - central part of the view.

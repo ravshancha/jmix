@@ -33,6 +33,7 @@
   padding-left: var(--lumo-space-m);
   padding-right: var(--lumo-space-m);
   font-size: var(--lumo-font-size-m);
+  border-bottom: 1px solid #1a39601a;
 }
 
 .jmix-main-view-application-title-base-link {
@@ -189,10 +190,11 @@ vaadin-menu-bar[jmix-role='jmix-user-menu']:not([theme~='substituted']) .user-me
     left: 0;
 }
 
-.jmix-initial-layout-logo {
-    --logo-size: calc(2.5 * var(--title-size));
-    width: var(--logo-size);
-    height: var(--logo-size);
+.jmix-main-view-application-title {
+    padding: 0px 15px;
+}
+.jmix-navigationbar-logo {
+    width: 100px;
 }
 
 @container jmix-initial-layout (max-width: 45rem) {

@@ -22,7 +22,7 @@ import javax.sql.DataSource;
 
 @Push
 @Theme(value = "umida-kb")
-@JsModule("./src/theme/color-scheme-switching-support.js")
+//@JsModule("./src/theme/color-scheme-switching-support.js")
 @PWA(name = "Umida", shortName = "Umida", offline = false)
 @SpringBootApplication
 public class UmidaApplication implements AppShellConfigurator {

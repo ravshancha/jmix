@@ -1,5 +1,6 @@
-@import url('umida-light.css');
-@import url('umida-dark.css');
+@import url('base.css');
+/*@import url('umida-dark.css');*/
+/*@import url('umida-light.css');*/
 @import url('view/main-view.css');
 @import url('view/main-view-top-menu.css');
 @import url('view/login-view.css');
