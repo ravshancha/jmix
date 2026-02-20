@@ -1,6 +1,7 @@
 package uz.kapitalbank.umida;
 
 import com.google.common.base.Strings;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.server.PWA;
@@ -20,7 +21,8 @@ import org.springframework.core.env.Environment;
 import javax.sql.DataSource;
 
 @Push
-@Theme(value = "umida")
+@Theme(value = "umida-kb")
+//@JsModule("./src/theme/color-scheme-switching-support.js")
 @PWA(name = "Umida", shortName = "Umida", offline = false)
 @SpringBootApplication
 public class UmidaApplication implements AppShellConfigurator {

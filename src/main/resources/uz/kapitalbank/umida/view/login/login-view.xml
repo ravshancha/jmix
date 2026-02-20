@@ -2,19 +2,34 @@
 <view xmlns="http://jmix.io/schema/flowui/view"
       focusComponent="login"
       title="msg://LoginView.title">
-    <layout justifyContent="CENTER" alignItems="CENTER" classNames="jmix-login-main-layout">
-        <loginForm id="login"
-                   forgotPasswordButtonVisible="false">
-            <form title="msg://loginForm.headerTitle"
-                  username="msg://loginForm.username"
-                  password="msg://loginForm.password"
-                  rememberMe="msg://loginForm.rememberMe"
-                  submit="msg://loginForm.submit"
-                  forgotPassword="msg://loginForm.forgotPassword"/>
-            <errorMessage title="msg://loginForm.errorTitle"
-                          message="msg://loginForm.badCredentials"
-                          username="msg://loginForm.errorUsername"
-                          password="msg://loginForm.errorPassword"/>
-        </loginForm>
+    <layout justifyContent="START" alignItems="START" classNames="jmix-login-main-layout">
+        <section classNames="jmix-login-wrapper">
+            <div classNames="jmix-login-form-header">
+                <image resource="public/images/logo-kb.png" classNames="jmix-login-form-header-logo"/>
+            </div>
+
+            <div classNames="jmix-login-form-content">
+                <div classNames="jmix-login-form-content-wrapper">
+                    <div classNames="jmix-login-form-content-brand">
+                        <image resource="public/images/logo.png" classNames="jmix-login-form-content-logo"/>
+                        <h4 text="Universal Management Information Data Assistant"/>
+                    </div>
+                    <loginForm id="login"
+                               classNames="jmix-login-form-layout"
+                               forgotPasswordButtonVisible="false">
+                        <form title="msg://loginForm.headerTitle"
+                              username="msg://loginForm.username"
+                              password="msg://loginForm.password"
+                              rememberMe="msg://loginForm.rememberMe"
+                              submit="msg://loginForm.submit"
+                              forgotPassword="msg://loginForm.forgotPassword"/>
+                        <errorMessage title="msg://loginForm.errorTitle"
+                                      message="msg://loginForm.badCredentials"
+                                      username="msg://loginForm.errorUsername"
+                                      password="msg://loginForm.errorPassword"/>
+                    </loginForm>
+                </div>
+            </div>
+        </section>
     </layout>
 </view>

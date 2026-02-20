@@ -1,6 +1,5 @@
 package uz.kapitalbank.umida.view.main;
 
-import uz.kapitalbank.umida.entity.User;
 import com.google.common.base.Strings;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -12,11 +11,15 @@ import io.jmix.core.Messages;
 import io.jmix.core.usersubstitution.CurrentUserSubstitution;
 import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.app.main.StandardMainView;
+import io.jmix.flowui.kit.action.ActionPerformedEvent;
+import io.jmix.flowui.kit.theme.ThemeUtils;
 import io.jmix.flowui.view.Install;
+import io.jmix.flowui.view.Subscribe;
 import io.jmix.flowui.view.ViewController;
 import io.jmix.flowui.view.ViewDescriptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
+import uz.kapitalbank.umida.entity.User;
 
 @Route("")
 @ViewController(id = "umida_MainView")
@@ -29,6 +32,16 @@ public class MainView extends StandardMainView {
     private UiComponents uiComponents;
     @Autowired
     private CurrentUserSubstitution currentUserSubstitution;
+
+//    @Subscribe("themeSwitcher.lightThemeItem.lightThemeAction")
+//    public void onThemeSwitcherLightThemeItemLightThemeAction(final ActionPerformedEvent event) {
+//        ThemeUtils.applyTheme("light");
+//    }
+//
+//    @Subscribe("themeSwitcher.darkThemeItem.darkThemeAction")
+//    public void onThemeSwitcherDarkThemeItemDarkThemeAction(final ActionPerformedEvent event) {
+//        ThemeUtils.applyTheme("dark");
+//    }
 
     @Install(to = "userMenu", subject = "buttonRenderer")
     private Component userMenuButtonRenderer(final UserDetails userDetails) {

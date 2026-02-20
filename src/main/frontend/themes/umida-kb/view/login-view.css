@@ -1,0 +1,80 @@
+/* Predefined styles for the LoginView */
+
+.jmix-login-main-layout {
+  /*background-color: var(--lumo-shade-5pct);*/
+  background-image: url("/public/images/login-bg-2.jpg");
+  background-position: right;
+  background-repeat: no-repeat;
+  background-size: cover;
+  padding: 0;
+  position: relative;
+}
+.jmix-login-main-layout:after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background-color: rgba(237, 226, 226, 0.1);
+}
+
+.jmix-login-wrapper {
+  position: relative;
+  z-index: 22;
+  min-height: 100%;
+  overflow: hidden;
+  position: relative;
+  background-color: #fff;
+}
+.jmix-login-form-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 20px 25px;
+}
+.jmix-login-form-header-logo {
+  width: 160px;
+}
+
+.jmix-login-form-content {
+  max-width: 480px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.jmix-login-form-content-wrapper {
+  width: 100%;
+  padding: 20px 25px;
+}
+
+
+.jmix-login-form-content-brand {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  margin-bottom: 20px;
+  text-transform: capitalize;
+}
+.jmix-login-form-content-brand .jmix-login-form-content-logo {
+  margin-bottom: 5px;
+  width: 240px;
+}
+.jmix-login-form-content-brand h4 {
+  line-height: 1.1;
+}
+
+
+vaadin-login-form-wrapper {
+  background-color: #fff;
+  color: var(--lumo-primary-text-color);
+  -webkit-box-shadow: 0px 0px 15px 10px rgba(134, 134, 134, 0.25);
+  -moz-box-shadow: 0px 0px 15px 10px rgba(134, 134, 134, 0.25);
+  box-shadow: 0px 0px 15px 10px rgba(134, 134, 134, 0.25);
+  border-radius: 6px;
+}
+
+vaadin-button[theme~="primary"] {
+  background-color: var(--lumo-primary-color);
+  color: black;
+  border-radius: 4px;
+}

@@ -1,0 +1,58 @@
+html {
+    --lumo-clickable-cursor: pointer;
+}
+
+html {
+    /*--lumo-base-color: #FFFFFF;*/
+
+    --lumo-primary-color: #FFD50F;
+    /*--lumo-primary-color-5pct: rgba(255, 213, 0, 0.05);*/
+    /*--lumo-primary-color-10pct: rgba(255, 213, 0, 0.1);*/
+    /*--lumo-primary-color-20pct: rgba(255, 213, 0, 0.2);*/
+    /*--lumo-primary-color-30pct: rgba(255, 213, 0, 0.3);*/
+    /*--lumo-primary-color-40pct: rgba(255, 213, 0, 0.4);*/
+    /*--lumo-primary-color-50pct: rgba(255, 213, 0, 0.5);*/
+    /*--lumo-primary-color-60pct: rgba(255, 213, 0, 0.6);*/
+    /*--lumo-primary-color-70pct: rgba(255, 213, 0, 0.7);*/
+    /*--lumo-primary-color-80pct: rgba(255, 213, 0, 0.8);*/
+    /*--lumo-primary-color-90pct: rgba(255, 213, 0, 0.9);*/
+    /*--lumo-primary-color-95pct: rgba(255, 213, 0, 0.95);*/
+
+    --lumo-primary-text-color: #131313;
+    --lumo-primary-contrast-color: #131313;
+
+    /*--lumo-contrast: var(--lumo-primary-color);*/
+    /*--lumo-contrast-5pct: var(--lumo-primary-color-5pct);*/
+    /*--lumo-contrast-10pct: var(--lumo-primary-color-10pct);*/
+    /*--lumo-contrast-20pct: var(--lumo-primary-color-20pct);*/
+    /*--lumo-contrast-30pct: var(--lumo-primary-color-30pct);*/
+    /*--lumo-contrast-40pct: var(--lumo-primary-color-40pct);*/
+    /*--lumo-contrast-50pct: var(--lumo-primary-color-50pct);*/
+    /*--lumo-contrast-60pct: var(--lumo-primary-color-60pct);*/
+    /*--lumo-contrast-70pct: var(--lumo-primary-color-70pct);*/
+    /*--lumo-contrast-80pct: var(--lumo-primary-color-80pct);*/
+    /*--lumo-contrast-90pct: var(--lumo-primary-color-90pct);*/
+
+    --lumo-error-text-color: #fff;
+    --lumo-error-contrast-color: #fff;
+    --lumo-error-color: rgb(202, 32, 39);
+    --lumo-error-color-10pct: rgba(202, 32, 39, 0.1);
+    --lumo-error-color-50pct: rgba(202, 32, 39, 0.5);
+
+    --lumo-warning-text-color: #fff;
+    --lumo-warning-contrast-color: #fff;
+    --lumo-warning-color: rgb(249, 178, 37);
+    --lumo-warning-color-10pct: rgba(249, 178, 37, 0.25);
+
+    --lumo-success-contrast-color: #fff;
+    --lumo-success-text-color: #fff;
+    --lumo-success-color: rgb(22, 160, 0);
+    --lumo-success-color-10pct: rgba(22, 160, 0, 0.1);
+    --lumo-success-color-50pct: rgba(22, 160, 0, 0.5);
+
+    /*--lumo-header-text-color: var(--lumo-primary-text-color);*/
+    /*--lumo-body-text-color: var(--lumo-primary-text-color);*/
+    /*--lumo-secondary-text-color: #868686;*/
+    /*--lumo-tertiary-text-color: #868686;*/
+    /*--lumo-disabled-text-color: #868686;*/
+}
