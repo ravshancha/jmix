@@ -1,6 +1,6 @@
 services:
   umida:
-    image: "umida:0.0.1"
+    build: .
     container_name: "umida"
     depends_on:
       postgres:
