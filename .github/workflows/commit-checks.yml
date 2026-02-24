@@ -74,6 +74,8 @@ jobs:
           export NODE_OPTIONS="--max-old-space-size=4096"
           ./gradlew clean bootJar \
             -Pvaadin.productionMode=true \
+            -PpremiumRepoUser=${{ secrets.PREMIUM_REPO_USER }} \
+            -PpremiumRepoPass=${{ secrets.PREMIUM_REPO_PASS }} \
             --no-daemon  
 
       - name: Prepare JAR
