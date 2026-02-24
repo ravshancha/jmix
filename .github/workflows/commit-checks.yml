@@ -1,0 +1,25 @@
+name: Commit Checks # название нашего workflow
+on: # Запускаем workflow при push и pull-request в ветку master.
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build: # описываем процесс сборки проекта
+    name: Building the app
+    runs-on: ubuntu-22.04 # определяем runner процесса - виртуальную машину ubuntu-22.04
+    steps: #определяем шаги, которые необходимо выполнить в этой job
+      - name: SSH to VPS and build
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: | 
+            cd /home/deploy/jmix
+            git pull origin main
+            chmod +x gradlew
+            ./gradlew clean publish

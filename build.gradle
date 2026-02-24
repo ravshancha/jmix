@@ -2,6 +2,7 @@ plugins {
     id 'io.jmix' version '2.7.4'
     id 'java'
     id 'org.jetbrains.gradle.plugin.idea-ext' version '1.1.9'
+    id 'maven-publish'
 }
 
 apply plugin: 'org.springframework.boot'
@@ -25,6 +26,38 @@ repositories {
         credentials {
             username = rootProject['premiumRepoUser']
             password = rootProject['premiumRepoPass']
+        }
+    }
+    maven {
+        url "http://localhost:8081/repository/maven-public/"
+        credentials {
+            username = "ci-user"
+            password = "user123"
+        }
+        allowInsecureProtocol = true // если без HTTPS
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            name = "nexus"
+            url = version.endsWith("SNAPSHOT") ?
+                    uri("http://localhost:8081/repository/maven-snapshots/") :
+                    uri("http://localhost:8081/repository/maven-releases/")
+
+            credentials {
+                username = "ci-user"
+                password = "user123"
+            }
+
+            allowInsecureProtocol = true
         }
     }
 }
