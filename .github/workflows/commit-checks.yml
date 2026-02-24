@@ -24,4 +24,4 @@ jobs:
             cd /home/deploy/jmix
             git pull origin master
             chmod +x gradlew
-            ./gradlew clean publish
+            ./gradlew clean publish --no-daemon --stacktrace
