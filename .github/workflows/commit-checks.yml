@@ -22,6 +22,6 @@ jobs:
           script: | 
             mkdir -p /home/deploy/jmix
             cd /home/deploy/jmix
-            git pull origin main
+            git pull origin master
             chmod +x gradlew
             ./gradlew clean publish
