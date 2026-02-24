@@ -49,6 +49,8 @@ jobs:
             git pull origin master
           
             chmod +x gradlew
+            
+            export NODE_OPTIONS="--max-old-space-size=3072"
           
             ./gradlew clean bootBuildImage \
             -Pvaadin.productionMode=true \
