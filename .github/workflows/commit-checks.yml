@@ -76,12 +76,7 @@ jobs:
             -Pvaadin.productionMode=true \
             -PpremiumRepoUser=${{ secrets.PREMIUM_REPO_USER }} \
             -PpremiumRepoPass=${{ secrets.PREMIUM_REPO_PASS }} \
-            --no-daemon  
-
-      - name: Prepare JAR
-        run: |
-          JAR_FILE=$(ls build/libs/*.jar | grep -v plain)
-          mv "$JAR_FILE" build/libs/app.jar
+            --no-daemon
 
       - name: Copy JAR to VPS
         uses: appleboy/scp-action@v0.1.7
