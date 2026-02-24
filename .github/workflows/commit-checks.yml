@@ -9,10 +9,26 @@ on: # Запускаем workflow при push и pull-request в ветку mast
       - master
 
 jobs:
-  build: # описываем процесс сборки проекта
-    name: Building the app
-    runs-on: ubuntu-22.04 # определяем runner процесса - виртуальную машину ubuntu-22.04
-    steps: #определяем шаги, которые необходимо выполнить в этой job
+#  build:
+#    name: Building the app
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - name: SSH to VPS and build
+#        uses: appleboy/ssh-action@v1.0.3
+#        with:
+#          host: ${{ secrets.VPS_HOST }}
+#          username: ${{ secrets.VPS_USER }}
+#          key: ${{ secrets.VPS_SSH_KEY }}
+#          script: |
+#            mkdir -p /home/deploy/jmix
+#            cd /home/deploy/jmix
+#            git pull origin master
+#            chmod +x gradlew
+#            ./gradlew clean publish --no-daemon --stacktrace
+  build-and-deploy:
+    name: Building and Deploy the app
+    runs-on: ubuntu-22.04
+    steps:
       - name: SSH to VPS and build
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -20,8 +36,24 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: | 
-            mkdir -p /home/deploy/jmix
-            cd /home/deploy/jmix
+            set -e
+
+            mkdir -p /home/deploy
+            cd /home/deploy
+          
+            if [ ! -d "jmix/.git" ]; then
+            git clone git@github.com:ravshancha/jmix.git jmix
+            fi
+          
+            cd jmix
             git pull origin master
+          
             chmod +x gradlew
-            ./gradlew clean publish --no-daemon --stacktrace
+          
+            ./gradlew clean bootBuildImage \
+            -Pvaadin.productionMode=true \
+            --no-daemon --stacktrace
+          
+            cd docker
+            docker compose down
+            docker compose up -d
