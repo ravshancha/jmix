@@ -94,7 +94,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            mv build/libs/app.jar docker/
+            mv /home/deploy/build/libs/app.jar /home/deploy/docker
             cd /home/deploy/docker
             docker compose down
             docker compose up -d --build
