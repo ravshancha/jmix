@@ -84,7 +84,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "build/libs/app.jar, docker/Dockerfile, docker/docker-compose.yml"
+          source: "build/libs/app.jar,docker/"
           target: "/home/deploy/"
 
       - name: Deploy on VPS
@@ -94,6 +94,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /home/deploy
+            mv build/libs/app.jar docker/
+            cd /home/deploy/docker
             docker compose down
             docker compose up -d --build
