@@ -60,7 +60,7 @@ jobs:
 #            docker compose down
 #            docker compose up -d
   build:
-    name: Building
+    name: Build and Deploy
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
