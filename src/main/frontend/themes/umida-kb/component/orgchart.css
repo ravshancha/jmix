@@ -1,0 +1,17 @@
+.material-icons {
+    padding-left: 17.5px;
+    color: #FFD50F;
+}
+.boc-light .boc-controls [data-control-id] {
+    user-select: none;
+}
+.boc-light .boc-controls [data-control-id]:hover {
+    background-color: #FFD50F;
+    border-color: #FFD50F;
+}
+.boc-light .boc-controls [data-control-id]:hover .material-icons {
+    color: #757575;
+}
+svg > g > line {
+    stroke: #FFD50F;
+}
