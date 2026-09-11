@@ -3,14 +3,16 @@
 
     <menu opened="true" id="application" title="msg://uz.kapitalbank.umida/menu.application.title">
         <item view="umida_User.list" title="msg://uz.kapitalbank.umida.view.user/UserListView.title"/>
-        <menu opened="true" id="catalog" description="msg://uz.kapitalbank.umida/menu_config.catalog.description"
-              title="msg://uz.kapitalbank.umida/menu_config.catalog.title">
-            <item view="umida_DealType.list" title="msg://uz.kapitalbank.umida.view.dealtype/dealTypeListView.title"/>
-            <item view="umida_Currency.list" title="msg://uz.kapitalbank.umida.view.currency/currencyListView.title"/>
-        </menu>
-        <item view="umida_OrgchartView" title="msg://uz.kapitalbank.umida.view.orgchart/orgchartView.title"/>
-        <item view="umida_Department.list" title="msg://uz.kapitalbank.umida.view.department/departmentListView.title"/>
-        <item view="umida_Division.list" title="msg://uz.kapitalbank.umida.view.division/divisionListView.title"/>
-        <item view="umida_Employee.list" title="msg://uz.kapitalbank.umida.view.employee/employeeListView.title"/>
     </menu>
+
+    <menu id="orgstructure" title="msg://uz.kapitalbank.umida/menu.orgstructure.title" opened="true">
+        <item view="OrgStructureEmployee.list" title="msg://uz.kapitalbank.umida/menu.orgStructureEmployee.title"/>
+    </menu>
+
+    <menu id="reporting" title="msg://uz.kapitalbank.umida/menu.reporting.title" opened="true">
+        <item view="umida_ReportingGroupsView" title="msg://uz.kapitalbank.umida/menu.reportGroups.title"/>
+        <item view="umida_ReportingMainView" title="msg://uz.kapitalbank.umida/menu.reporting.title"/>
+        <item view="umida_ReportingAnalyticsView" title="msg://uz.kapitalbank.umida/menu.analytics.title"/>
+    </menu>
+
 </menu-config>

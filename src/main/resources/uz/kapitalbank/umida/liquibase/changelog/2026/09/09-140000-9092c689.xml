@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- Оформление групп переехало из отдельной таблицы в саму группу (ExtReportGroup). -->
+    <changeSet id="1" author="umida">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="REPORT_GROUP_STYLE"/>
+        </preConditions>
+        <dropTable tableName="REPORT_GROUP_STYLE"/>
+    </changeSet>
+
+    <changeSet id="2" author="umida">
+        <addColumn tableName="REPORT_GROUP">
+            <column name="DTYPE" type="VARCHAR(100)"/>
+            <column name="ICON" type="VARCHAR(50)"/>
+            <column name="COLOR" type="VARCHAR(20)"/>
+            <column name="PARENT_ID" type="UUID"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- Существующие строки должны читаться как расширенная сущность, иначе новые поля до них
+         не доходят. -->
+    <changeSet id="3" author="umida">
+        <update tableName="REPORT_GROUP">
+            <column name="DTYPE" value="umida_ExtReportGroup"/>
+            <where>DTYPE is null</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="4" author="umida">
+        <createIndex indexName="IDX_REPORT_GROUP_PARENT" tableName="REPORT_GROUP">
+            <column name="PARENT_ID"/>
+        </createIndex>
+        <addForeignKeyConstraint baseColumnNames="PARENT_ID" baseTableName="REPORT_GROUP"
+                                 constraintName="FK_REPORT_GROUP_ON_PARENT"
+                                 referencedColumnNames="ID" referencedTableName="REPORT_GROUP"/>
+    </changeSet>
+</databaseChangeLog>

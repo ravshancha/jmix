@@ -55,6 +55,14 @@ public class User implements JmixUserDetails, HasTimeZone {
     @Column(name = "TIME_ZONE_ID")
     private String timeZoneId;
 
+    /**
+     * Строка оргструктуры этого пользователя: своей колонки в UMIDA_USER нет, связь держит
+     * ORG_STRUCTURE_EMPLOYEE.USER_ID. Через неё гриды показывают должность и подразделение
+     * обычными property-колонками, без вычисляемых значений.
+     */
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private OrgStructureEmployee orgEmployee;
+
     @Transient
     private Collection<? extends GrantedAuthority> authorities;
 
@@ -151,6 +159,14 @@ public class User implements JmixUserDetails, HasTimeZone {
     @Override
     public boolean isEnabled() {
         return Boolean.TRUE.equals(active);
+    }
+
+    public OrgStructureEmployee getOrgEmployee() {
+        return orgEmployee;
+    }
+
+    public void setOrgEmployee(OrgStructureEmployee orgEmployee) {
+        this.orgEmployee = orgEmployee;
     }
 
     @InstanceName

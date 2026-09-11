@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://ReportingMainView.title"
+      focusComponent="userReportsDataGrid">
+    <data>
+        <collection id="userReportsDc" class="uz.kapitalbank.umida.entity.UserReport">
+            <fetchPlan extends="_base">
+                <property name="owner" fetchPlan="_base"/>
+                <property name="report" fetchPlan="_base">
+                    <property name="group" fetchPlan="_base"/>
+                </property>
+            </fetchPlan>
+            <loader id="userReportsDl"/>
+        </collection>
+        <collection id="reportGroupsDc" class="io.jmix.reports.entity.ReportGroup">
+            <fetchPlan extends="_base"/>
+            <loader id="reportGroupsDl">
+                <query>
+                    <![CDATA[select e from report_ReportGroup e order by e.title]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+        <urlQueryParameters>
+            <pagination component="pagination"/>
+        </urlQueryParameters>
+    </facets>
+
+    <layout>
+        <vbox id="filterPanel" width="100%" padding="false" spacing="false" classNames="report-filter-panel">
+            <hbox width="100%" alignItems="END" padding="false">
+                <formLayout id="filterForm" width="100%">
+                    <!-- Пять фильтров в одну строку на широком экране: имя, код, срез, группа,
+                         домен. Ниже 75em сетка сворачивается в две колонки и в одну. -->
+                    <responsiveSteps>
+                        <responsiveStep minWidth="0" columns="1"/>
+                        <responsiveStep minWidth="35em" columns="2"/>
+                        <responsiveStep minWidth="60em" columns="3"/>
+                        <responsiveStep minWidth="75em" columns="5"/>
+                    </responsiveSteps>
+                    <textField id="nameFilterField"
+                               label="msg://filter.reportName"
+                               placeholder="msg://filter.reportName.placeholder"
+                               clearButtonVisible="true"
+                               valueChangeMode="LAZY"/>
+                    <textField id="codeFilterField"
+                               label="msg://filter.reportCode"
+                               placeholder="msg://filter.all"
+                               clearButtonVisible="true"
+                               valueChangeMode="LAZY"/>
+                    <select id="scopeFilterField" label="msg://filter.scope" width="100%"/>
+                    <entityComboBox id="groupFilterField"
+                                    label="msg://filter.reportGroup"
+                                    placeholder="msg://filter.reportGroup.placeholder"
+                                    metaClass="report_ReportGroup"
+                                    itemsContainer="reportGroupsDc"
+                                    clearButtonVisible="true"/>
+                    <!-- Значения домена — перечисление, список задаётся контроллером. -->
+                    <comboBox id="domainFilterField"
+                              label="msg://filter.domain"
+                              placeholder="msg://filter.all"
+                              clearButtonVisible="true"/>
+                </formLayout>
+                <button id="resetFilterButton" text="msg://resetFilterButton.text" width="10em"/>
+            </hbox>
+        </vbox>
+
+        <hbox id="buttonsPanel" classNames="buttons-panel report-toolbar" width="100%"
+              alignItems="CENTER" justifyContent="BETWEEN">
+            <hbox id="actionsPanel" classNames="report-toolbar-actions" alignItems="CENTER">
+                <dropdownButton id="createReportDropdown" text="msg://createReportButton.text"
+                                icon="PLUS" themeNames="tertiary">
+                    <items>
+                        <actionItem id="createItem" ref="userReportsDataGrid.createReport"/>
+                        <actionItem id="createWizardItem" ref="userReportsDataGrid.createReportWizard"/>
+                    </items>
+                </dropdownButton>
+                <button id="editReportButton" action="userReportsDataGrid.editReport" themeNames="tertiary"/>
+                <button id="runReportButton" action="userReportsDataGrid.runReport" themeNames="tertiary"/>
+                <button id="executionsButton" action="userReportsDataGrid.executions" themeNames="tertiary"/>
+                <button id="reportAccessButton" action="userReportsDataGrid.reportAccess" themeNames="tertiary"/>
+                <button id="descriptionButton" action="userReportsDataGrid.showDescription" themeNames="tertiary"/>
+                <dropdownButton id="moreDropdown" icon="ELLIPSIS_DOTS_H" themeNames="tertiary">
+                    <items>
+                        <actionItem id="copyItem" ref="userReportsDataGrid.copyReport"/>
+                        <actionItem id="removeItem" ref="userReportsDataGrid.removeAction"/>
+                        <actionItem id="importItem" ref="userReportsDataGrid.importReport"/>
+                        <actionItem id="exportItem" ref="userReportsDataGrid.exportReport"/>
+                    </items>
+                </dropdownButton>
+            </hbox>
+            <!-- Размер страницы фиксирован: выбор «строк на странице» пользователю не нужен. -->
+            <simplePagination id="pagination" dataLoader="userReportsDl"
+                              itemsPerPageVisible="false"
+                              itemsPerPageDefaultValue="20"
+                              classNames="report-pagination"/>
+        </hbox>
+
+        <dataGrid id="userReportsDataGrid"
+                  width="100%"
+                  columnReorderingAllowed="true"
+                  minHeight="20em"
+                  dataContainer="userReportsDc">
+            <actions showInContextMenuEnabled="true">
+                <action id="runReport" text="msg://runReportButton.text" icon="CHECK"/>
+                <action id="executions" text="msg://executions" icon="CLOCK"/>
+                <action id="showDescription" text="msg://descriptionButton.text" icon="INFO_CIRCLE_O"/>
+                <action id="reportAccess" text="msg://reportAccessButton.text" icon="KEY"/>
+                <action id="editReport" text="msg://editReportButton.text" icon="EDIT"/>
+                <action id="createReport" text="msg://createReportMenu.create" icon="PLUS"/>
+                <action id="createReportWizard" text="msg://createReportMenu.wizard" icon="MAGIC"/>
+                <action id="copyReport" text="msg://copyReport" icon="COPY"/>
+                <action id="importReport" text="msg://importReport" icon="UPLOAD"/>
+                <action id="exportReport" text="msg://exportReport" icon="DOWNLOAD"/>
+                <action id="removeAction" type="list_remove"/>
+            </actions>
+            <columns resizable="true" sortable="true" filterable="true">
+                <column property="report.code" header="msg://reportCode" width="12em"/>
+                <column property="report.name" header="msg://reportName" flexGrow="2"/>
+                <column property="owner.username" header="msg://owner" width="12em" flexGrow="0"/>
+                <column property="report.group" header="msg://reportGroup" width="14em"/>
+                <column property="domain" header="msg://reportDomain" width="10em"/>
+            </columns>
+        </dataGrid>
+    </layout>
+</view>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1" author="umida">
+        <dropForeignKeyConstraint baseTableName="bpm_user_group_role" constraintName="fk_bpm_ugr_on_user_group"/>
+    </changeSet>
+    <changeSet id="2" author="umida">
+        <dropForeignKeyConstraint baseTableName="bpm_user_group_user" constraintName="fk_bpm_ugu_on_user_group"/>
+    </changeSet>
+    <changeSet id="3" author="umida">
+        <dropForeignKeyConstraint baseTableName="email_sending_attachment"
+                                  constraintName="fk_email_attachment_message"/>
+    </changeSet>
+    <changeSet id="4" author="umida">
+        <dropForeignKeyConstraint baseTableName="msgtmp_message_template"
+                                  constraintName="fk_msgtmp_message_template_on_group"/>
+    </changeSet>
+    <changeSet id="5" author="umida">
+        <dropForeignKeyConstraint baseTableName="msgtmp_message_template_parameter"
+                                  constraintName="fk_msgtmp_message_template_parameter_on_template"/>
+    </changeSet>
+    <changeSet id="6" author="umida">
+        <dropTable cascadeConstraints="true" tableName="bpm_content_storage"/>
+    </changeSet>
+    <changeSet id="7" author="umida">
+        <dropTable cascadeConstraints="true" tableName="bpm_user_group"/>
+    </changeSet>
+    <changeSet id="8" author="umida">
+        <dropTable cascadeConstraints="true" tableName="bpm_user_group_role"/>
+    </changeSet>
+    <changeSet id="9" author="umida">
+        <dropTable cascadeConstraints="true" tableName="bpm_user_group_user"/>
+    </changeSet>
+    <changeSet id="10" author="umida">
+        <dropTable cascadeConstraints="true" tableName="email_refresh_token"/>
+    </changeSet>
+    <changeSet id="11" author="umida">
+        <dropTable cascadeConstraints="true" tableName="email_sending_attachment"/>
+    </changeSet>
+    <changeSet id="12" author="umida">
+        <dropTable cascadeConstraints="true" tableName="email_sending_message"/>
+    </changeSet>
+    <changeSet id="13" author="umida">
+        <dropTable cascadeConstraints="true" tableName="msgtmp_message_template"/>
+    </changeSet>
+    <changeSet id="14" author="umida">
+        <dropTable cascadeConstraints="true" tableName="msgtmp_message_template_block"/>
+    </changeSet>
+    <changeSet id="15" author="umida">
+        <dropTable cascadeConstraints="true" tableName="msgtmp_message_template_group"/>
+    </changeSet>
+    <changeSet id="16" author="umida">
+        <dropTable cascadeConstraints="true" tableName="msgtmp_message_template_parameter"/>
+    </changeSet>
+</databaseChangeLog>

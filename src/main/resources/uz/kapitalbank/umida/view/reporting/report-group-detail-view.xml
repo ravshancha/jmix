@@ -1,0 +1,55 @@
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://reportGroupDetailView.title"
+      focusComponent="titleField">
+
+    <data>
+        <instance id="groupDc" class="io.jmix.reports.entity.ReportGroup">
+            <!-- parent нужен явно: это ссылка, в _local её нет, а вложенность группы правится
+                 вместе с самой группой. -->
+            <fetchPlan extends="_local">
+                <property name="parent" fetchPlan="_instance_name"/>
+            </fetchPlan>
+            <loader/>
+        </instance>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+
+    <actions>
+        <action id="saveAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+
+    <layout padding="false" spacing="false" classNames="report-group-detail-root">
+        <!-- Живая карточка: показывает, как группа будет выглядеть в списке. Наполняется в
+             ExtReportGroupDetailView#refreshPreview. -->
+        <div id="previewCard" classNames="report-group-card report-group-card-preview"/>
+
+        <vbox id="fields" padding="false" spacing="false" width="100%" classNames="report-group-detail-fields">
+            <textField id="titleField" dataContainer="groupDc" property="title"
+                       label="msg://name" placeholder="msg://enterPlaceholder"
+                       required="true" width="100%"/>
+            <!-- Обязательное только название: код и локализация заполняются по желанию. -->
+            <textField id="codeField" dataContainer="groupDc" property="code"
+                       label="msg://systemCode" placeholder="msg://enterPlaceholder"
+                       width="100%"/>
+
+            <nativeLabel id="iconLabel" text="msg://icon" classNames="report-group-picker-label"/>
+            <div id="iconPicker" width="100%" classNames="report-group-icon-picker"/>
+
+            <nativeLabel id="colorLabel" text="msg://color" classNames="report-group-picker-label"/>
+            <div id="colorPicker" width="100%" classNames="report-group-color-picker"/>
+
+            <textField id="localeField" dataContainer="groupDc" property="localeNames"
+                       label="msg://localization" placeholder="msg://enterPlaceholder"
+                       width="100%"/>
+        </vbox>
+
+        <hbox id="detailActions" width="100%" justifyContent="END" classNames="report-group-detail-actions">
+            <button id="closeBtn" action="closeAction"/>
+            <button id="saveAndCloseBtn" action="saveAction" themeNames="primary"/>
+        </hbox>
+    </layout>
+</view>

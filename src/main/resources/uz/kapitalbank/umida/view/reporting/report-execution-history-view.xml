@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://ReportExecutionHistoryView.title"
+      focusComponent="executionsDataGrid">
+    <data readOnly="true">
+        <collection id="executionsDc"
+                    class="io.jmix.reports.entity.ReportExecution">
+            <fetchPlan extends="_base"/>
+            <loader id="executionsDl"/>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <layout>
+        <hbox id="toolbar" classNames="buttons-panel report-toolbar" width="100%"
+              alignItems="CENTER" justifyContent="BETWEEN">
+            <hbox id="buttonsPanel" classNames="buttons-panel" padding="false" alignItems="CENTER">
+                <button id="downloadButton" action="executionsDataGrid.download" themeNames="primary"/>
+            </hbox>
+            <simplePagination id="pagination" dataLoader="executionsDl"
+                              classNames="report-pagination"/>
+        </hbox>
+        <dataGrid id="executionsDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  columnReorderingAllowed="true"
+                  dataContainer="executionsDc">
+            <actions>
+                <action id="download" type="list_itemTracking" text="msg://downloadButton.text" icon="DOWNLOAD"/>
+            </actions>
+            <columns resizable="true">
+                <column property="reportName" header="msg://reportName"/>
+                <column property="username" header="msg://username"/>
+                <column property="startTime" header="msg://startTime"/>
+                <column property="finishTime" header="msg://finishTime"/>
+                <column property="errorMessage" header="msg://errorMessage"/>
+                <column key="statusIcon" header="" width="4em" flexGrow="0"/>
+            </columns>
+        </dataGrid>
+    </layout>
+</view>

@@ -11,6 +11,10 @@
                               classNames="jmix-main-view-drawer-toggle"
                               themeNames="contrast"
                               ariaLabel="msg://drawerToggle.ariaLabel"/>
+                <hbox id="viewActionsSlot"
+                      padding="false"
+                      spacing="true"
+                      alignItems="CENTER"/>
                 <h1 id="viewTitle" classNames="jmix-main-view-title"/>
 
 <!--                <dropdownButton id="themeSwitcher"-->

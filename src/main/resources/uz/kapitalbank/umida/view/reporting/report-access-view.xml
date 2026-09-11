@@ -1,0 +1,140 @@
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://reportAccessView.title">
+    <data>
+        <collection id="allRowsDc" class="uz.kapitalbank.umida.entity.ReportAccessRow">
+            <fetchPlan extends="_base"/>
+        </collection>
+        <collection id="grantorRowsDc" class="uz.kapitalbank.umida.entity.ReportAccessRow">
+            <fetchPlan extends="_base"/>
+        </collection>
+        <collection id="requestsDc" class="uz.kapitalbank.umida.entity.ReportAccessRequest">
+            <fetchPlan extends="_base">
+                <property name="requester" fetchPlan="_base"/>
+                <property name="addressee" fetchPlan="_base"/>
+            </fetchPlan>
+        </collection>
+        <collection id="historyDc" class="uz.kapitalbank.umida.entity.ReportAccessEvent">
+            <fetchPlan extends="_base">
+                <property name="subjectUser" fetchPlan="_base"/>
+                <property name="actorUser" fetchPlan="_base"/>
+            </fetchPlan>
+        </collection>
+    </data>
+    <layout padding="true" spacing="true" width="100%" height="100%">
+
+        <!-- Шапка экрана («‹ Доступы») переезжает в верхнюю панель приложения,
+             см. ReportAccessView#onInit. Название отчёта остаётся в теле экрана — над вкладками. -->
+        <hbox id="headerPanel" alignItems="CENTER" padding="false" spacing="true"
+          classNames="report-access-header">
+            <button id="backButton" icon="ARROW_LEFT" themeNames="tertiary-inline"/>
+            <h3 id="viewTitle" text="msg://reportAccessView.title"/>
+        </hbox>
+
+        <!-- Объявлен здесь, но по макету живёт под панелью вкладок: ReportAccessView
+             переносит его первым элементом в содержимое активной вкладки. -->
+        <span id="reportTitle" classNames="report-access-subject" width="100%"/>
+
+        <tabSheet id="tabSheet" width="100%" height="100%">
+
+            <tab id="allTab" label="msg://tab.all">
+                <vbox padding="false" spacing="true" width="100%" height="100%">
+                    <hbox id="allButtonsPanel" classNames="report-toolbar-actions" padding="false"
+                          spacing="false" alignItems="CENTER">
+                        <button id="grantAccessButton" text="msg://grantAccessButton.text"
+                                icon="KEY" themeNames="tertiary" classNames="report-primary-action"/>
+                        <button id="editAccessButton" text="msg://editAccessButton.text"
+                                icon="COG" themeNames="tertiary"/>
+                        <button id="revokeAccessButton" text="msg://revokeAccessButton.text"
+                                icon="CLOSE" themeNames="tertiary"/>
+                    </hbox>
+                    <dataGrid id="allDataGrid" width="100%" height="100%" dataContainer="allRowsDc"
+                              classNames="report-grid">
+                        <columns resizable="true" sortable="true">
+                            <column property="fullName" header="msg://column.fullName" flexGrow="2"/>
+                            <column property="username" header="msg://column.username" width="14em"/>
+                            <column property="accessLevel" header="msg://column.accessLevel" width="16em"/>
+                            <column property="validFrom" header="msg://column.validFrom" width="12em"/>
+                            <column property="validTo" header="msg://column.validTo" width="12em"/>
+                        </columns>
+                    </dataGrid>
+                </vbox>
+            </tab>
+
+            <!-- Выдача доступа на подразделение целиком — следующий этап, вкладка пока пустая. -->
+            <tab id="departmentsTab" label="msg://tab.departments">
+                <vbox padding="false" spacing="true" width="100%" height="100%"/>
+            </tab>
+
+            <tab id="accessesTab" label="msg://tab.accesses">
+                <vbox padding="false" spacing="true" width="100%" height="100%">
+                    <hbox id="requestButtonsPanel" classNames="report-toolbar-actions" padding="false"
+                          spacing="false" alignItems="CENTER">
+                        <button id="requestAccessButton" text="msg://requestAccessButton.text"
+                                icon="KEY" themeNames="tertiary" enabled="false"/>
+                    </hbox>
+                    <dataGrid id="grantorsDataGrid" width="100%" height="100%" dataContainer="grantorRowsDc"
+                              classNames="report-grid">
+                        <columns resizable="true" sortable="true">
+                            <column property="fullName" header="msg://column.fullName" flexGrow="2"/>
+                            <column property="username" header="msg://column.username" width="14em"/>
+                            <column property="accessLevel" header="msg://column.accessLevel" width="16em"/>
+                            <column property="grantorStatus" header="msg://column.grantorStatus" width="18em"/>
+                        </columns>
+                    </dataGrid>
+                </vbox>
+            </tab>
+
+            <tab id="requestsTab" label="msg://tab.requests">
+                <vbox padding="false" spacing="true" width="100%" height="100%">
+                    <hbox id="decisionButtonsPanel" classNames="report-toolbar-actions" padding="false"
+                          spacing="false" alignItems="CENTER">
+                        <button id="approveButton" text="msg://approveButton.text" icon="CHECK"
+                                themeNames="tertiary" classNames="report-primary-action"/>
+                        <button id="rejectButton" text="msg://rejectButton.text" icon="CLOSE"
+                                themeNames="tertiary"/>
+                    </hbox>
+                    <dataGrid id="requestsDataGrid" width="100%" height="100%" dataContainer="requestsDc"
+                              classNames="report-grid">
+                        <columns resizable="true" sortable="true">
+                            <column property="requestedAt" header="msg://column.requestedAt" width="14em"/>
+                            <column key="requesterName" header="msg://column.fullName" flexGrow="2"/>
+                            <column property="scope" header="msg://column.scope" width="16em"/>
+                            <column property="reason" header="msg://column.reason" flexGrow="2"/>
+                            <column key="addresseeName" header="msg://column.addressee" width="16em"/>
+                        </columns>
+                    </dataGrid>
+                </vbox>
+            </tab>
+
+            <tab id="historyTab" label="msg://tab.history">
+                <vbox padding="false" spacing="true" width="100%" height="100%">
+                    <dataGrid id="historyDataGrid" width="100%" height="100%" dataContainer="historyDc"
+                              classNames="report-grid">
+                        <!-- Порядок колонок повторяет дизайн: сначала кто и откуда, затем что
+                             произошло, затем кто исполнил и откуда он. -->
+                        <columns resizable="true" sortable="true">
+                            <column property="eventDate" header="msg://column.eventDate" width="12em"/>
+                            <column property="subjectUser" header="msg://column.user" width="18em"/>
+                            <column property="subjectUser.orgEmployee.positionName"
+                                    header="msg://column.position" width="14em"/>
+                            <column property="subjectUser.orgEmployee.department"
+                                    header="msg://column.department" width="18em"/>
+                            <column property="eventType" header="msg://column.status" width="14em"/>
+                            <column property="requestReason" header="msg://column.requestReason" width="18em"/>
+                            <!-- Единственная вычисляемая колонка: «Период» склеивает validFrom и
+                                 validTo в одну строку, отдельного поля под него в таблице нет. -->
+                            <column key="period" header="msg://column.period" width="14em"/>
+                            <column property="actorUser" header="msg://column.actor" width="18em"/>
+                            <column property="actorUser.orgEmployee.positionName"
+                                    header="msg://column.position" width="14em"/>
+                            <column property="actorUser.orgEmployee.department"
+                                    header="msg://column.department" width="18em"/>
+                            <column property="rejectionReason" header="msg://column.rejectionReason" width="18em"/>
+                        </columns>
+                    </dataGrid>
+                </vbox>
+            </tab>
+
+        </tabSheet>
+    </layout>
+</view>

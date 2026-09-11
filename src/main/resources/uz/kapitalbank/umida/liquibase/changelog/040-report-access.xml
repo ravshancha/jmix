@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!--
+        Ролевая модель доступа к отчётам: заявки, выданные доступы и журнал событий.
+        Владелец отчёта отдельной строкой доступа не заводится — он берётся из USER_REPORT.OWNER_ID.
+    -->
+
+    <changeSet id="1" author="umida">
+        <createTable tableName="REPORT_ACCESS_REQUEST">
+            <column name="ID" type="${uuid.type}">
+                <constraints primaryKey="true" primaryKeyName="PK_REPORT_ACCESS_REQUEST" nullable="false"/>
+            </column>
+            <column name="VERSION" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REQUESTER_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REPORT_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ADDRESSEE_ID" type="${uuid.type}"/>
+            <column name="STATUS" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SCOPE_" type="VARCHAR(50)"/>
+            <column name="REASON" type="VARCHAR(1000)"/>
+            <column name="REQUESTED_AT" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DECIDED_BY_ID" type="${uuid.type}"/>
+            <column name="DECIDED_AT" type="DATETIME"/>
+            <column name="REJECTION_REASON" type="VARCHAR(1000)"/>
+            <column name="VALID_FROM" type="DATE"/>
+            <column name="VALID_TO" type="DATE"/>
+            <column name="CAN_GRANT" type="BOOLEAN" defaultValueBoolean="false"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2" author="umida">
+        <createIndex indexName="IDX_REPORT_ACCESS_REQUEST_REQUESTER" tableName="REPORT_ACCESS_REQUEST">
+            <column name="REQUESTER_ID"/>
+        </createIndex>
+        <createIndex indexName="IDX_REPORT_ACCESS_REQUEST_REPORT" tableName="REPORT_ACCESS_REQUEST">
+            <column name="REPORT_ID"/>
+        </createIndex>
+        <createIndex indexName="IDX_REPORT_ACCESS_REQUEST_ADDRESSEE" tableName="REPORT_ACCESS_REQUEST">
+            <column name="ADDRESSEE_ID"/>
+        </createIndex>
+        <addForeignKeyConstraint baseColumnNames="REQUESTER_ID" baseTableName="REPORT_ACCESS_REQUEST"
+                                 constraintName="FK_REPORT_ACCESS_REQUEST_ON_REQUESTER" onDelete="CASCADE"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+        <addForeignKeyConstraint baseColumnNames="REPORT_ID" baseTableName="REPORT_ACCESS_REQUEST"
+                                 constraintName="FK_REPORT_ACCESS_REQUEST_ON_REPORT" onDelete="CASCADE"
+                                 referencedColumnNames="ID" referencedTableName="REPORT_REPORT"/>
+        <addForeignKeyConstraint baseColumnNames="ADDRESSEE_ID" baseTableName="REPORT_ACCESS_REQUEST"
+                                 constraintName="FK_REPORT_ACCESS_REQUEST_ON_ADDRESSEE"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+        <addForeignKeyConstraint baseColumnNames="DECIDED_BY_ID" baseTableName="REPORT_ACCESS_REQUEST"
+                                 constraintName="FK_REPORT_ACCESS_REQUEST_ON_DECIDED_BY"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+    </changeSet>
+
+    <changeSet id="3" author="umida">
+        <createTable tableName="REPORT_ACCESS">
+            <column name="ID" type="${uuid.type}">
+                <constraints primaryKey="true" primaryKeyName="PK_REPORT_ACCESS" nullable="false"/>
+            </column>
+            <column name="VERSION" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REPORT_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="USER_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ACCESS_LEVEL" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="VALID_FROM" type="DATE"/>
+            <column name="VALID_TO" type="DATE"/>
+            <column name="ACTIVE" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="GRANTED_BY_ID" type="${uuid.type}"/>
+            <column name="GRANTED_AT" type="DATETIME"/>
+            <column name="REVOKED_BY_ID" type="${uuid.type}"/>
+            <column name="REVOKED_AT" type="DATETIME"/>
+            <column name="REVOKE_REASON" type="VARCHAR(1000)"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="4" author="umida">
+        <createIndex indexName="IDX_REPORT_ACCESS_REPORT_USER" tableName="REPORT_ACCESS">
+            <column name="REPORT_ID"/>
+            <column name="USER_ID"/>
+        </createIndex>
+        <createIndex indexName="IDX_REPORT_ACCESS_USER" tableName="REPORT_ACCESS">
+            <column name="USER_ID"/>
+        </createIndex>
+        <addForeignKeyConstraint baseColumnNames="REPORT_ID" baseTableName="REPORT_ACCESS"
+                                 constraintName="FK_REPORT_ACCESS_ON_REPORT" onDelete="CASCADE"
+                                 referencedColumnNames="ID" referencedTableName="REPORT_REPORT"/>
+        <addForeignKeyConstraint baseColumnNames="USER_ID" baseTableName="REPORT_ACCESS"
+                                 constraintName="FK_REPORT_ACCESS_ON_USER" onDelete="CASCADE"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+        <addForeignKeyConstraint baseColumnNames="GRANTED_BY_ID" baseTableName="REPORT_ACCESS"
+                                 constraintName="FK_REPORT_ACCESS_ON_GRANTED_BY"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+        <addForeignKeyConstraint baseColumnNames="REVOKED_BY_ID" baseTableName="REPORT_ACCESS"
+                                 constraintName="FK_REPORT_ACCESS_ON_REVOKED_BY"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+    </changeSet>
+
+    <changeSet id="5" author="umida">
+        <createTable tableName="REPORT_ACCESS_EVENT">
+            <column name="ID" type="${uuid.type}">
+                <constraints primaryKey="true" primaryKeyName="PK_REPORT_ACCESS_EVENT" nullable="false"/>
+            </column>
+            <column name="REPORT_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="EVENT_DATE" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="EVENT_TYPE" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SUBJECT_USER_ID" type="${uuid.type}"/>
+            <column name="ACTOR_USER_ID" type="${uuid.type}"/>
+            <column name="REQUEST_ID" type="${uuid.type}"/>
+            <column name="REQUEST_REASON" type="VARCHAR(1000)"/>
+            <column name="REJECTION_REASON" type="VARCHAR(1000)"/>
+            <column name="VALID_FROM" type="DATE"/>
+            <column name="VALID_TO" type="DATE"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="6" author="umida">
+        <createIndex indexName="IDX_REPORT_ACCESS_EVENT_REPORT" tableName="REPORT_ACCESS_EVENT">
+            <column name="REPORT_ID"/>
+            <column name="EVENT_DATE"/>
+        </createIndex>
+        <createIndex indexName="IDX_REPORT_ACCESS_EVENT_SUBJECT" tableName="REPORT_ACCESS_EVENT">
+            <column name="SUBJECT_USER_ID"/>
+        </createIndex>
+        <addForeignKeyConstraint baseColumnNames="REPORT_ID" baseTableName="REPORT_ACCESS_EVENT"
+                                 constraintName="FK_REPORT_ACCESS_EVENT_ON_REPORT" onDelete="CASCADE"
+                                 referencedColumnNames="ID" referencedTableName="REPORT_REPORT"/>
+        <addForeignKeyConstraint baseColumnNames="SUBJECT_USER_ID" baseTableName="REPORT_ACCESS_EVENT"
+                                 constraintName="FK_REPORT_ACCESS_EVENT_ON_SUBJECT"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+        <addForeignKeyConstraint baseColumnNames="ACTOR_USER_ID" baseTableName="REPORT_ACCESS_EVENT"
+                                 constraintName="FK_REPORT_ACCESS_EVENT_ON_ACTOR"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+        <addForeignKeyConstraint baseColumnNames="REQUEST_ID" baseTableName="REPORT_ACCESS_EVENT"
+                                 constraintName="FK_REPORT_ACCESS_EVENT_ON_REQUEST" onDelete="CASCADE"
+                                 referencedColumnNames="ID" referencedTableName="REPORT_ACCESS_REQUEST"/>
+    </changeSet>
+
+</databaseChangeLog>

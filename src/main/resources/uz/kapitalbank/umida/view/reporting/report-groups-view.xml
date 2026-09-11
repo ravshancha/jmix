@@ -1,0 +1,75 @@
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://reportGroupsView.title"
+      focusComponent="sortSelect">
+
+    <data>
+        <collection id="groupsDc" class="io.jmix.reports.entity.ReportGroup">
+            <loader id="groupsDl"/>
+        </collection>
+    </data>
+
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+
+    <facets>
+        <settings auto="true"/>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+
+    <layout>
+        <!-- Одна строка: действия слева, порядок карточек справа. Пагинации нет — групп
+             немного, они показываются все сразу. -->
+        <hbox id="buttonsPanel" classNames="buttons-panel report-group-toolbar" width="100%"
+              alignItems="CENTER">
+            <button action="reportGroupsDataGrid.create"/>
+            <button action="reportGroupsDataGrid.edit"/>
+            <!-- Удаление — необратимое действие, поэтому кнопка красная. -->
+            <button action="reportGroupsDataGrid.remove" themeNames="error"
+                    classNames="report-group-remove"/>
+            <!-- Порядок карточек. Скрытый грид сортировать больше нечем — его заголовков на
+                 экране нет, поэтому порядок задаётся этим полем, см. ReportGroupsView#sortOrder. -->
+            <select id="sortSelect" width="14em" classNames="report-group-sort"/>
+        </hbox>
+        <!-- Путь по вложенным группам. На верхнем уровне скрыт. -->
+        <div id="breadcrumbBox" width="100%" visible="false" classNames="report-group-breadcrumb"/>
+
+        <!-- Содержимое уровня: подгруппы и отчёты открытой группы, см. ReportGroupsView#renderCards. -->
+        <div id="cardsBox" classNames="report-group-cards"/>
+
+        <!-- Грид оставлен скрытым как модель выделения: на нём висят действия create/edit/remove
+             и lookup-режим экрана, а карточки только переключают в нём выбранную строку. -->
+        <dataGrid id="reportGroupsDataGrid" dataContainer="groupsDc"
+                  visible="false"
+                  columnReorderingAllowed="true"
+                  width="100%" minHeight="20em">
+            <actions>
+                <!-- Свой редактор группы: к полям аддона добавлены иконка, цвет и превью. -->
+                <action id="create" type="list_create">
+                    <properties>
+                        <property name="openMode" value="DIALOG"/>
+                        <property name="viewId" value="umida_ReportGroupDetailView"/>
+                    </properties>
+                </action>
+                <action id="edit" type="list_edit">
+                    <properties>
+                        <property name="openMode" value="DIALOG"/>
+                        <property name="viewId" value="umida_ReportGroupDetailView"/>
+                    </properties>
+                </action>
+                <action id="remove" type="list_remove"/>
+            </actions>
+            <columns resizable="true">
+                <column property="title"/>
+                <column property="code"/>
+                <column property="systemFlag"/>
+                <column property="source"/>
+            </columns>
+        </dataGrid>
+        <hbox id="lookupActions" visible="false">
+            <button id="selectBtn" action="selectAction"/>
+            <button id="discardBtn" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>

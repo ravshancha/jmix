@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://orgStructureEmployeeDetailView.title"
+      focusComponent="form">
+    <data>
+        <instance id="orgStructureEmployeeDc"
+                  class="uz.kapitalbank.umida.entity.OrgStructureEmployee">
+            <fetchPlan extends="_base">
+                <property name="user" fetchPlan="_instance_name"/>
+            </fetchPlan>
+            <loader id="orgStructureEmployeeDl"/>
+        </instance>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <actions>
+        <action id="saveCloseAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+    <layout expand="formScroller" height="100%" spacing="false">
+        <scroller id="formScroller" width="100%" minHeight="0">
+            <formLayout id="form" dataContainer="orgStructureEmployeeDc">
+                <responsiveSteps>
+                    <responsiveStep minWidth="0" columns="1"/>
+                    <responsiveStep minWidth="40em" columns="2"/>
+                </responsiveSteps>
+                <textField id="fullnameField" property="fullname" colspan="2"/>
+                <textField id="emailField" property="email"/>
+                <entityPicker id="userField" property="user"/>
+                <textField id="userIdField" property="user.id" readOnly="true"/>
+                <textField id="positionNameField" property="positionName" colspan="2"/>
+                <textField id="isHeadField" property="isHead"/>
+                <textField id="organizationField" property="organization"/>
+                <textField id="organizationIdField" property="organizationId"/>
+                <textField id="departmentField" property="department"/>
+                <textField id="departmentIdField" property="departmentId"/>
+                <textField id="divisionField" property="division"/>
+                <textField id="divisionIdField" property="divisionId"/>
+                <textField id="sectionNameField" property="sectionName"/>
+                <textField id="sectionIdField" property="sectionId"/>
+                <textField id="unitField" property="unit"/>
+                <textField id="unitIdField" property="unitId"/>
+            </formLayout>
+        </scroller>
+        <hbox id="detailActions" padding="false">
+            <button id="saveAndCloseButton" action="saveCloseAction"/>
+            <button id="closeButton" action="closeAction"/>
+        </hbox>
+    </layout>
+</view>

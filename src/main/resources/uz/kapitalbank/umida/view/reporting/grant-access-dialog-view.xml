@@ -1,0 +1,29 @@
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://grantAccessDialog.title">
+    <layout padding="true" spacing="true" width="100%">
+
+        <span id="reportLabel" classNames="report-access-subject"/>
+
+        <formLayout id="profileForm" width="100%" responsiveSteps="2">
+            <textField id="fullNameField" label="msg://grantAccessDialog.fullName" readOnly="true"/>
+            <textField id="usernameField" label="msg://grantAccessDialog.username" readOnly="true"/>
+            <textArea id="reasonField" label="msg://grantAccessDialog.reason" readOnly="true" height="5em"/>
+        </formLayout>
+
+        <formLayout id="periodForm" width="100%" responsiveSteps="2">
+            <datePicker id="validFromField" label="msg://grantAccessDialog.validFrom" width="100%"/>
+            <datePicker id="validToField" label="msg://grantAccessDialog.validTo"
+                        placeholder="msg://grantAccessDialog.validTo.placeholder" width="100%"/>
+        </formLayout>
+
+        <!-- Отмеченная галочка выдаёт уровень GRANT: сотрудник сможет выдавать доступ к этому
+             отчёту другим. Заявка на повышение приходит с ней уже включённой. -->
+        <checkbox id="canGrantField" label="msg://grantAccessDialog.canGrant"/>
+
+        <hbox id="footerPanel" width="100%" justifyContent="END" spacing="true">
+            <button id="cancelButton" text="msg://grantAccessDialog.cancel" themeNames="tertiary"/>
+            <button id="grantButton" text="msg://grantAccessDialog.grant" icon="CHECK"
+                    classNames="report-primary-action"/>
+        </hbox>
+    </layout>
+</view>

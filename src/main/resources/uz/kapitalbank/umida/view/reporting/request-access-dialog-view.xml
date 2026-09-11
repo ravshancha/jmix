@@ -1,0 +1,28 @@
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://requestAccessDialog.title">
+    <layout padding="true" spacing="true" width="100%">
+
+        <span id="hintLabel" text="msg://requestAccessDialog.hint" classNames="report-muted"/>
+        <span id="reportLabel" classNames="report-access-subject"/>
+
+        <formLayout id="profileForm" width="100%" responsiveSteps="2">
+            <textField id="fullNameField" label="msg://requestAccessDialog.fullName" readOnly="true"/>
+            <textField id="usernameField" label="msg://requestAccessDialog.username" readOnly="true"/>
+            <textField id="addresseeField" label="msg://requestAccessDialog.addressee" readOnly="true"/>
+            <textField id="levelField" label="msg://requestAccessDialog.level" readOnly="true"/>
+        </formLayout>
+
+        <formLayout id="requestForm" width="100%" responsiveSteps="2">
+            <textArea id="reasonField" label="msg://requestAccessDialog.reason"
+                      placeholder="msg://requestAccessDialog.reason.placeholder" required="true"
+                      height="6em"/>
+            <select id="scopeField" label="msg://requestAccessDialog.scope" width="100%"/>
+        </formLayout>
+
+        <hbox id="footerPanel" width="100%" justifyContent="END" spacing="true">
+            <button id="closeButton" text="msg://requestAccessDialog.close" themeNames="tertiary"/>
+            <button id="requestButton" text="msg://requestAccessDialog.request" icon="CHECK"
+                    classNames="report-primary-action"/>
+        </hbox>
+    </layout>
+</view>

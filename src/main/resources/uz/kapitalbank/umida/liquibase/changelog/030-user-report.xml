@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="1" author="umida">
+        <createTable tableName="USER_REPORT">
+            <column name="ID" type="${uuid.type}">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="OWNER_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REPORT_ID" type="${uuid.type}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2" author="umida">
+        <createIndex indexName="IDX_USER_REPORT_OWNER" tableName="USER_REPORT">
+            <column name="OWNER_ID"/>
+        </createIndex>
+        <createIndex indexName="IDX_USER_REPORT_REPORT" tableName="USER_REPORT">
+            <column name="REPORT_ID"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="3" author="umida">
+        <addForeignKeyConstraint baseColumnNames="OWNER_ID" baseTableName="USER_REPORT"
+                                 constraintName="FK_USER_REPORT_ON_OWNER" onDelete="CASCADE"
+                                 referencedColumnNames="ID" referencedTableName="UMIDA_USER"/>
+        <addForeignKeyConstraint baseColumnNames="REPORT_ID" baseTableName="USER_REPORT"
+                                 constraintName="FK_USER_REPORT_ON_REPORT"
+                                 referencedColumnNames="ID" referencedTableName="REPORT_REPORT"/>
+    </changeSet>
+
+</databaseChangeLog>

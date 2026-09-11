@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+    Расширение экрана отчёта из аддона: к вкладке «Отчёт» добавляется только поле «Домен», всё
+    остальное берётся из io/jmix/reportsflowui/view/report/report-detail-view.xml.
+
+    messagesGroup оставлен аддоновским, чтобы унаследованные msg:// ключи продолжали
+    разрешаться; собственная подпись поля берётся по полному ключу.
+-->
+<view xmlns="http://jmix.io/schema/flowui/view"
+      xmlns:ext="http://jmix.io/schema/flowui/view-ext"
+      extends="io/jmix/reportsflowui/view/report/report-detail-view.xml"
+      messagesGroup="io.jmix.reportsflowui.view.report">
+    <layout>
+        <tabSheet id="mainTabSheet">
+            <tab id="detailsTab">
+                <vbox id="detailsTabContent">
+                    <formLayout id="reportForm">
+                        <!-- Сразу за «Группой»: домен читается как её деловая пара. -->
+                        <select id="domainField"
+                                ext:index="3"
+                                label="msg://uz.kapitalbank.umida.view.reporting/reportDomain"
+                                emptySelectionAllowed="true"
+                                width="100%"/>
+                    </formLayout>
+                </vbox>
+            </tab>
+        </tabSheet>
+    </layout>
+</view>

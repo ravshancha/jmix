@@ -1,5 +1,5 @@
 plugins {
-    id 'io.jmix' version '2.7.4'
+    id 'io.jmix' version '2.8.2'
     id 'java'
     id 'org.jetbrains.gradle.plugin.idea-ext' version '1.1.9'
     id 'maven-publish'
@@ -9,7 +9,7 @@ apply plugin: 'org.springframework.boot'
 apply plugin: 'com.vaadin'
 
 jmix {
-    bomVersion = '2.7.4'
+    bomVersion = '2.8.2'
     projectId = 'umida'
 }
 
@@ -65,20 +65,7 @@ publishing {
 dependencies {
     implementation 'io.jmix.translations:jmix-translations-ru'
 
-    implementation 'io.jmix.bpm:jmix-bpm-flowui-starter'
-    implementation 'io.jmix.bpm:jmix-bpm-starter'
-
-    implementation 'io.jmix.quartz:jmix-quartz-flowui-starter'
-    implementation 'io.jmix.quartz:jmix-quartz-starter'
-
-    implementation 'io.jmix.messagetemplates:jmix-messagetemplates-flowui-starter'
-    implementation 'io.jmix.messagetemplates:jmix-messagetemplates-starter'
-
     implementation 'io.jmix.groupgrid:jmix-groupgrid-flowui-starter'
-
-
-    implementation 'io.jmix.email:jmix-email-flowui-starter'
-    implementation 'io.jmix.email:jmix-email-starter'
 
     implementation 'io.jmix.charts:jmix-charts-flowui-starter'
 
@@ -91,6 +78,8 @@ dependencies {
     implementation 'io.jmix.reports:jmix-reports-rest-starter'
     implementation 'io.jmix.reports:jmix-reports-flowui-starter'
 
+    implementation 'io.jmix.audit:jmix-audit-starter'
+    implementation 'io.jmix.audit:jmix-audit-flowui-starter'
 
     implementation 'io.jmix.core:jmix-core-starter'
     implementation 'io.jmix.data:jmix-eclipselink-starter'
@@ -113,6 +102,23 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'com.oracle.database.jdbc:ojdbc11'
     implementation 'org.eclipse.persistence:org.eclipse.persistence.oracle'
+    implementation 'com.mysql:mysql-connector-j'
+    implementation 'com.oracle.database.nls:orai18n:23.7.0.25.01'
+
+    constraints {
+        implementation('org.springframework.security:spring-security-core') {
+            version { strictly('6.5.9') }
+        }
+        implementation('org.springframework.security:spring-security-config') {
+            version { strictly('6.5.9') }
+        }
+        implementation('org.springframework.security:spring-security-web') {
+            version { strictly('6.5.9') }
+        }
+        implementation('org.springframework.security:spring-security-crypto') {
+            version { strictly('6.5.9') }
+        }
+    }
 }
 
 configurations.implementation {

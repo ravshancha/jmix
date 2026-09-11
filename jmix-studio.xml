@@ -1,21 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="IgnoredChangelogIncludeConfig">
+    <datastore-include-infos>
+      <datastore-include-info datastore-name="main" />
+    </datastore-include-infos>
+  </component>
   <component name="JmixDataStoreSettingsManager">
     <moduleSettings>
       <entry key="umida.main">
         <ModuleSettings>
           <option name="dataStoreOptionsV2">
             <map>
-              <entry key="dwh">
-                <value>
-                  <DataStoreSettingsV2>
-                    <option name="nameLengthMode" value="ORACLE" />
-                    <option name="supportedTypes">
-                      <option value="oracle" />
-                    </option>
-                  </DataStoreSettingsV2>
-                </value>
-              </entry>
               <entry key="main">
                 <value>
                   <DataStoreSettingsV2>
@@ -33,6 +28,7 @@
     </moduleSettings>
   </component>
   <component name="JmixPluginProjectSettings">
+    <option name="addLogicalFilePathToChangelogs" value="false" />
     <option name="savedDbProperties">
       <list>
         <SavedDbProperties>

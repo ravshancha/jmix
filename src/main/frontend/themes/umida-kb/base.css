@@ -54,5 +54,5 @@ html {
     /*--lumo-body-text-color: var(--lumo-primary-text-color);*/
     /*--lumo-secondary-text-color: #868686;*/
     /*--lumo-tertiary-text-color: #868686;*/
-    /*--lumo-disabled-text-color: #868686;*/
+    --lumo-disabled-text-color: #868686;
 }
