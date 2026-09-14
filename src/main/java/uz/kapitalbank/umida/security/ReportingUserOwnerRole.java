@@ -14,6 +14,7 @@ import io.jmix.securityflowui.role.UiFilterRole;
 import io.jmix.securityflowui.role.annotation.MenuPolicy;
 import io.jmix.securityflowui.role.annotation.ViewPolicy;
 import uz.kapitalbank.umida.entity.OrgStructureEmployee;
+import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.view.reporting.ReportingMainView;
 
 /**
@@ -93,4 +94,15 @@ public interface ReportingUserOwnerRole extends ReportingUserBasicRole, ReportsF
     @EntityAttributePolicy(entityClass = OrgStructureEmployee.class, attributes = "*",
             action = EntityAttributePolicyAction.MODIFY)
     void orgStructureEmployee();
+
+    /**
+     * Справочник предметных областей ведёт владелец отчётов: домен он же и проставляет отчёту в
+     * его редакторе.
+     */
+    @ViewPolicy(viewIds = {"umida_ReportDomain.list", "umida_ReportDomain.detail"})
+    @MenuPolicy(menuIds = {"umida_ReportDomain.list"})
+    @EntityPolicy(entityClass = ReportDomain.class, actions = EntityPolicyAction.ALL)
+    @EntityAttributePolicy(entityClass = ReportDomain.class, attributes = "*",
+            action = EntityAttributePolicyAction.MODIFY)
+    void reportDomain();
 }

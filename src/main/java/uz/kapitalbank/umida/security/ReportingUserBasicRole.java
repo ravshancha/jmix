@@ -19,6 +19,7 @@ import uz.kapitalbank.umida.entity.ReportAccessEvent;
 import uz.kapitalbank.umida.entity.ReportAccessRequest;
 import uz.kapitalbank.umida.entity.ReportAccessRow;
 import uz.kapitalbank.umida.entity.User;
+import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.UserReport;
 
 
@@ -72,6 +73,15 @@ public interface ReportingUserBasicRole extends UiMinimalPolicies {
             attributes = {"username", "firstName", "lastName", "email"},
             action = EntityAttributePolicyAction.VIEW)
     void reportList();
+
+    /**
+     * Домен отчёта: справочник только на чтение — сотрудник им фильтрует список и видит колонку,
+     * а ведёт справочник владелец отчётов.
+     */
+    @EntityPolicy(entityClass = ReportDomain.class, actions = EntityPolicyAction.READ)
+    @EntityAttributePolicy(entityClass = ReportDomain.class, attributes = "*",
+            action = EntityAttributePolicyAction.VIEW)
+    void reportDomain();
 
     /**
      * Модель доступа только на чтение: заявки, выданные доступы и журнал показываются на экране

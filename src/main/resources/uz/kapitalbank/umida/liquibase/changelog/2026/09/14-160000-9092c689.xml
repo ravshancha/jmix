@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <!-- Поддомены: второй уровень справочника областей. Отчёт можно отнести как к области
+         верхнего уровня, так и к поддомену — в дереве справочника они выбираются одинаково.
+         Идентификаторы родителей — из changeSet 4 файла 14-120000-9092c689.xml. -->
+    <changeSet id="1" author="umida">
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000001"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000001"/>
+            <column name="CODE" value="RETAIL_CARDS"/>
+            <column name="SHORT_NAME" value="Cards"/>
+            <column name="LONG_NAME" value="Retail cards and payments"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000002"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000001"/>
+            <column name="CODE" value="RETAIL_LOANS"/>
+            <column name="SHORT_NAME" value="Retail loans"/>
+            <column name="LONG_NAME" value="Retail lending"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000003"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000001"/>
+            <column name="CODE" value="RETAIL_DEPOSITS"/>
+            <column name="SHORT_NAME" value="Deposits"/>
+            <column name="LONG_NAME" value="Retail deposits and savings"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000004"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000002"/>
+            <column name="CODE" value="CORP_LOANS"/>
+            <column name="SHORT_NAME" value="Corporate loans"/>
+            <column name="LONG_NAME" value="Corporate lending"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000005"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000002"/>
+            <column name="CODE" value="CORP_TRADE"/>
+            <column name="SHORT_NAME" value="Trade finance"/>
+            <column name="LONG_NAME" value="Trade finance and guarantees"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000006"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000003"/>
+            <column name="CODE" value="RISK_CREDIT"/>
+            <column name="SHORT_NAME" value="Credit risk"/>
+            <column name="LONG_NAME" value="Credit risk management"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000007"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000003"/>
+            <column name="CODE" value="RISK_OPERATIONAL"/>
+            <column name="SHORT_NAME" value="Operational risk"/>
+            <column name="LONG_NAME" value="Operational risk management"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000008"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000004"/>
+            <column name="CODE" value="FIN_ACCOUNTING"/>
+            <column name="SHORT_NAME" value="Accounting"/>
+            <column name="LONG_NAME" value="Accounting and reporting"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000009"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000004"/>
+            <column name="CODE" value="FIN_BUDGET"/>
+            <column name="SHORT_NAME" value="Budgeting"/>
+            <column name="LONG_NAME" value="Budgeting and planning"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000010"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000005"/>
+            <column name="CODE" value="OPS_PAYMENTS"/>
+            <column name="SHORT_NAME" value="Payments"/>
+            <column name="LONG_NAME" value="Payments and settlements"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000011"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000005"/>
+            <column name="CODE" value="OPS_BRANCH"/>
+            <column name="SHORT_NAME" value="Branch network"/>
+            <column name="LONG_NAME" value="Branch network operations"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000012"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000006"/>
+            <column name="CODE" value="HR_PAYROLL"/>
+            <column name="SHORT_NAME" value="Payroll"/>
+            <column name="LONG_NAME" value="Payroll and compensation"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000013"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000006"/>
+            <column name="CODE" value="HR_STAFFING"/>
+            <column name="SHORT_NAME" value="Headcount"/>
+            <column name="LONG_NAME" value="Headcount and staffing"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000014"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000007"/>
+            <column name="CODE" value="IT_INFRA"/>
+            <column name="SHORT_NAME" value="Infrastructure"/>
+            <column name="LONG_NAME" value="IT infrastructure"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+        <insert tableName="REPORT_DOMAIN">
+            <column name="ID" value="1f2a0002-0000-4000-8000-000000000015"/>
+            <column name="VERSION" valueNumeric="1"/>
+            <column name="PARENT_ID" value="1f2a0001-0000-4000-8000-000000000007"/>
+            <column name="CODE" value="IT_SECURITY"/>
+            <column name="SHORT_NAME" value="Information security"/>
+            <column name="LONG_NAME" value="Information security"/>
+            <column name="LANGUAGE" value="en"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

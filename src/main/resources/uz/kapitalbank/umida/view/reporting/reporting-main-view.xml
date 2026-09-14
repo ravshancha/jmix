@@ -9,16 +9,9 @@
                 <property name="report" fetchPlan="_base">
                     <property name="group" fetchPlan="_base"/>
                 </property>
+                <property name="domain" fetchPlan="_base"/>
             </fetchPlan>
             <loader id="userReportsDl"/>
-        </collection>
-        <collection id="reportGroupsDc" class="io.jmix.reports.entity.ReportGroup">
-            <fetchPlan extends="_base"/>
-            <loader id="reportGroupsDl">
-                <query>
-                    <![CDATA[select e from report_ReportGroup e order by e.title]]>
-                </query>
-            </loader>
         </collection>
     </data>
 
@@ -52,17 +45,39 @@
                                clearButtonVisible="true"
                                valueChangeMode="LAZY"/>
                     <select id="scopeFilterField" label="msg://filter.scope" width="100%"/>
-                    <entityComboBox id="groupFilterField"
-                                    label="msg://filter.reportGroup"
-                                    placeholder="msg://filter.reportGroup.placeholder"
-                                    metaClass="report_ReportGroup"
-                                    itemsContainer="reportGroupsDc"
-                                    clearButtonVisible="true"/>
-                    <!-- Значения домена — перечисление, список задаётся контроллером. -->
-                    <comboBox id="domainFilterField"
-                              label="msg://filter.domain"
-                              placeholder="msg://filter.all"
-                              clearButtonVisible="true"/>
+                    <!-- Группы и области вложенные, поэтому выбираются не выпадающим списком, а
+                         диалогом справочника: у групп это экран с карточками и «хлебными
+                         крошками», у областей — дерево с поддоменами. -->
+                    <entityPicker id="groupFilterField"
+                                  label="msg://filter.reportGroup"
+                                  placeholder="msg://filter.reportGroup.placeholder"
+                                  metaClass="report_ReportGroup"
+                                  width="100%">
+                        <actions>
+                            <action id="lookup" type="entity_lookup">
+                                <properties>
+                                    <property name="viewId" value="umida_ReportingGroupsView"/>
+                                    <property name="openMode" value="DIALOG"/>
+                                </properties>
+                            </action>
+                            <action id="clear" type="entity_clear"/>
+                        </actions>
+                    </entityPicker>
+                    <entityPicker id="domainFilterField"
+                                  label="msg://filter.domain"
+                                  placeholder="msg://filter.all"
+                                  metaClass="umida_ReportDomain"
+                                  width="100%">
+                        <actions>
+                            <action id="lookup" type="entity_lookup">
+                                <properties>
+                                    <property name="viewId" value="umida_ReportDomain.list"/>
+                                    <property name="openMode" value="DIALOG"/>
+                                </properties>
+                            </action>
+                            <action id="clear" type="entity_clear"/>
+                        </actions>
+                    </entityPicker>
                 </formLayout>
                 <button id="resetFilterButton" text="msg://resetFilterButton.text" width="10em"/>
             </hbox>

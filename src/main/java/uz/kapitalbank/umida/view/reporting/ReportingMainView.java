@@ -22,9 +22,8 @@ import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.ViewNavigators;
 import io.jmix.flowui.UiProperties;
-import io.jmix.flowui.component.combobox.EntityComboBox;
-import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.grid.DataGrid;
+import io.jmix.flowui.component.valuepicker.EntityPicker;
 import io.jmix.flowui.component.select.JmixSelect;
 import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.download.ByteArrayDownloadDataProvider;
@@ -52,7 +51,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.security.core.userdetails.UserDetails;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.entity.UserReport;
-import uz.kapitalbank.umida.enums.ReportDomain;
+import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.service.ReportAccessService;
 import uz.kapitalbank.umida.service.UserReportSyncService;
 import uz.kapitalbank.umida.view.main.MainView;
@@ -132,9 +131,9 @@ public class ReportingMainView extends StandardListView<UserReport> {
     @ViewComponent
     private TypedTextField<String> codeFilterField;
     @ViewComponent
-    private EntityComboBox<ReportGroup> groupFilterField;
+    private EntityPicker<ReportGroup> groupFilterField;
     @ViewComponent
-    private JmixComboBox<ReportDomain> domainFilterField;
+    private EntityPicker<ReportDomain> domainFilterField;
 
 
     /**
@@ -248,16 +247,10 @@ public class ReportingMainView extends StandardListView<UserReport> {
     private void initFilterListeners() {
         nameFilterField.addValueChangeListener(e -> reloadReports());
         codeFilterField.addValueChangeListener(e -> reloadReports());
+        // Группа и область выбираются диалогом справочника, очистка — действием «clear» самого
+        // поля, поэтому здесь остаётся только перезагрузка списка.
         groupFilterField.addValueChangeListener(e -> reloadReports());
-        // Крестик очистки, как у текстовых фильтров: у комбобоксов атрибут дескриптора не всегда
-        // доходит до самого поля, поэтому ставится и здесь.
-        groupFilterField.setClearButtonVisible(true);
-
-        // Домен — перечисление, а не справочник, поэтому список значений задаётся здесь.
-        domainFilterField.setItems(ReportDomain.values());
-        domainFilterField.setItemLabelGenerator(domain -> domain == null ? "" : messages.getMessage(domain));
         domainFilterField.addValueChangeListener(e -> reloadReports());
-        domainFilterField.setClearButtonVisible(true);
     }
 
     @Subscribe("resetFilterButton")
@@ -648,7 +641,7 @@ public class ReportingMainView extends StandardListView<UserReport> {
         ReportDomain domain = domainFilterField.getValue();
         if (domain != null) {
             conditions.add("e.domain = :domainFilter");
-            parameters.put("domainFilter", domain.getId());
+            parameters.put("domainFilter", domain);
         }
 
         ReportScopeFilter scope = scopeFilterField.getValue();

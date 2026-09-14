@@ -24,6 +24,7 @@ import io.jmix.flowui.kit.action.Action;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
+import io.jmix.flowui.view.DialogMode;
 import io.jmix.flowui.view.DialogWindow;
 import io.jmix.flowui.view.Install;
 import io.jmix.flowui.view.LookupComponent;
@@ -92,6 +93,9 @@ import java.util.Map;
 @ViewController(id = "umida_ReportingGroupsView")
 @ViewDescriptor(path = "report-groups-view.xml")
 @LookupComponent("reportGroupsDataGrid")
+// Размер диалога: экран открывается из поля выбора группы в фильтре «Отчётности», карточкам
+// нужна ширина, иначе сетка сворачивается в одну колонку.
+@DialogMode(width = "64em", height = "40em", resizable = true)
 public class ReportGroupsView extends StandardListView<ReportGroup> {
 
     @ViewComponent
@@ -222,8 +226,7 @@ public class ReportGroupsView extends StandardListView<ReportGroup> {
      * пагинации), поэтому проще собрать карточки заново, чем сверять их с содержимым контейнера.
      */
     @Subscribe(id = "groupsDc", target = Target.DATA_CONTAINER)
-    public void onGroupsDcCollectionChange(
-            final CollectionContainer.CollectionChangeEvent<ReportGroup> event) {
+    public void onGroupsDcCollectionChange(final CollectionContainer.CollectionChangeEvent<ReportGroup> event) {
         renderCards();
     }
 
@@ -238,7 +241,11 @@ public class ReportGroupsView extends StandardListView<ReportGroup> {
         // Внутри группы показываются её подгруппы и её отчёты; на верхнем уровне — группы,
         // у которых родителя нет.
         List<ReportGroup> groups = new ArrayList<>(groupsDc.getItems());
-        List<Report> reports = currentGroup() == null ? List.of() : reportsOf(currentGroup());
+        // В режиме выбора отчёты не показываются: полю нужна группа, а карточка отчёта в нём
+        // всё равно не выбирается — она только мешает найти нужную группу.
+        List<Report> reports = currentGroup() == null || isLookupMode()
+                ? List.of()
+                : reportsOf(currentGroup());
 
         if (groups.isEmpty() && reports.isEmpty()) {
             Span empty = new Span(messageBundle.getMessage(
@@ -529,13 +536,21 @@ public class ReportGroupsView extends StandardListView<ReportGroup> {
      * и группы не правит.
      */
     protected void updateActionsVisible() {
-        boolean root = path.isEmpty() && isManagePermitted();
+        boolean root = path.isEmpty() && isManagePermitted() && !isLookupMode();
         for (String actionId : List.of("create", "edit", "remove")) {
             Action action = reportGroupsDataGrid.getAction(actionId);
             if (action != null) {
                 action.setVisible(root);
             }
         }
+    }
+
+    /**
+     * Открыт ли экран диалогом из поля выбора группы. В этом режиме он только для выбора:
+     * ведение групп остаётся в его собственном пункте меню, а отчёты не показываются.
+     */
+    protected boolean isLookupMode() {
+        return getSelectionHandler().isPresent();
     }
 
     /**

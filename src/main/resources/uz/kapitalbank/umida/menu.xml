@@ -11,6 +11,7 @@
 
     <menu id="reporting" title="msg://uz.kapitalbank.umida/menu.reporting.title" opened="true">
         <item view="umida_ReportingGroupsView" title="msg://uz.kapitalbank.umida/menu.reportGroups.title"/>
+        <item view="umida_ReportDomain.list" title="msg://uz.kapitalbank.umida/menu.reportDomains.title"/>
         <item view="umida_ReportingMainView" title="msg://uz.kapitalbank.umida/menu.reporting.title"/>
         <item view="umida_ReportingAnalyticsView" title="msg://uz.kapitalbank.umida/menu.analytics.title"/>
     </menu>

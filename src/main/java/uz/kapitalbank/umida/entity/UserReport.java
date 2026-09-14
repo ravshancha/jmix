@@ -17,15 +17,14 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import org.springframework.lang.Nullable;
 
-import uz.kapitalbank.umida.enums.ReportDomain;
-
 import java.util.UUID;
 
 @JmixEntity
 @Entity
 @Table(name = "USER_REPORT", indexes = {
         @Index(name = "IDX_USER_REPORT_OWNER", columnList = "OWNER_ID"),
-        @Index(name = "IDX_USER_REPORT_REPORT", columnList = "REPORT_ID")
+        @Index(name = "IDX_USER_REPORT_REPORT", columnList = "REPORT_ID"),
+        @Index(name = "IDX_USER_REPORT_DOMAIN", columnList = "DOMAIN_ID")
 })
 public class UserReport {
 
@@ -53,11 +52,15 @@ public class UserReport {
      * <p>
      * Домен относится к самому отчёту, а не к владельцу строки, но хранится здесь: в «Отчётности»
      * на отчёт приходится ровно одна строка (см. {@code UserReportSyncService}), а сущность
-     * {@code Report} принадлежит аддону и расширять её ради одного поля не нужно. Благодаря этому
-     * фильтр и колонка списка работают обычным JPQL, без join-ов и фильтрации в памяти.
+     * {@code Report} принадлежит аддону и расширять её ради одного поля не нужно.
+     * <p>
+     * Удаление области, на которую ссылаются отчёты, запрещено: иначе строки списка остались бы
+     * с битой ссылкой, а разрез «по домену» — без части отчётов.
      */
-    @Column(name = "DOMAIN", length = 50)
-    private String domain;
+    @OnDeleteInverse(DeletePolicy.DENY)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "DOMAIN_ID")
+    private ReportDomain domain;
 
     public UUID getId() {
         return id;
@@ -93,11 +96,11 @@ public class UserReport {
 
     @Nullable
     public ReportDomain getDomain() {
-        return domain == null ? null : ReportDomain.fromId(domain);
+        return domain;
     }
 
     public void setDomain(@Nullable ReportDomain domain) {
-        this.domain = domain == null ? null : domain.getId();
+        this.domain = domain;
     }
 
     @InstanceName

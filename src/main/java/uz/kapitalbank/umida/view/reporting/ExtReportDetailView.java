@@ -3,9 +3,8 @@ package uz.kapitalbank.umida.view.reporting;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import io.jmix.core.EntityStates;
-import io.jmix.core.Messages;
 import io.jmix.core.security.CurrentAuthentication;
-import io.jmix.flowui.component.select.JmixSelect;
+import io.jmix.flowui.component.valuepicker.EntityPicker;
 import io.jmix.flowui.view.DefaultMainViewParent;
 import io.jmix.flowui.view.EditedEntityContainer;
 import io.jmix.flowui.view.Subscribe;
@@ -16,8 +15,8 @@ import io.jmix.reportsflowui.view.report.ReportDetailView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.userdetails.UserDetails;
+import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.User;
-import uz.kapitalbank.umida.enums.ReportDomain;
 import uz.kapitalbank.umida.service.UserReportSyncService;
 
 /**
@@ -42,23 +41,19 @@ import uz.kapitalbank.umida.service.UserReportSyncService;
 public class ExtReportDetailView extends ReportDetailView {
 
     @Autowired
-    private Messages messages;
-    @Autowired
     private EntityStates entityStates;
     @Autowired
     private CurrentAuthentication currentAuthentication;
     @Autowired
     private UserReportSyncService userReportSyncService;
 
+    /**
+     * Поле выбора области: значение приходит из справочника {@code umida_ReportDomain.list},
+     * который открывается диалогом действием {@code lookup}. Списком значений здесь не
+     * управляют — у областей есть поддомены, и дерево справочника показывает их само.
+     */
     @ViewComponent
-    private JmixSelect<ReportDomain> domainField;
-
-    @Subscribe
-    public void onInitDomainField(InitEvent event) {
-        domainField.setItems(ReportDomain.values());
-        // Пустой пункт «домен не выбран» тоже проходит через генератор, а Messages не принимает null.
-        domainField.setItemLabelGenerator(domain -> domain == null ? "" : messages.getMessage(domain));
-    }
+    private EntityPicker<ReportDomain> domainField;
 
     /**
      * У нового отчёта строки «Отчётности» ещё нет, поэтому читать нечего: поле остаётся пустым до

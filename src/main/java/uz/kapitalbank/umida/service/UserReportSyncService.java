@@ -1,6 +1,7 @@
 package uz.kapitalbank.umida.service;
 
 import io.jmix.core.DataManager;
+import io.jmix.core.FetchPlan;
 import io.jmix.core.security.SystemAuthenticator;
 import io.jmix.reports.entity.Report;
 import org.slf4j.Logger;
@@ -9,9 +10,9 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.entity.UserReport;
-import uz.kapitalbank.umida.enums.ReportDomain;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -165,6 +166,15 @@ public class UserReportSyncService {
     }
 
     /**
+     * Идентификатор области или {@code null}. Области сравниваются по нему, а не через
+     * {@code equals}: экземпляры, пришедшие из разных загрузок, — разные объекты.
+     */
+    @Nullable
+    private static UUID domainId(@Nullable ReportDomain domain) {
+        return domain == null ? null : domain.getId();
+    }
+
+    /**
      * Проставляет отчёту домен.
      * <p>
      * Строку «Отчётности» может ещё не существовать: отчёт сохраняется раньше, чем список успевает
@@ -182,7 +192,7 @@ public class UserReportSyncService {
 
         return systemAuthenticator.withSystem(() -> findByReport(reportId)
                 .map(userReport -> {
-                    if (Objects.equals(userReport.getDomain(), domain)) {
+                    if (Objects.equals(domainId(userReport.getDomain()), domainId(domain))) {
                         return true;
                     }
                     userReport.setDomain(domain);
@@ -198,6 +208,9 @@ public class UserReportSyncService {
     private Optional<UserReport> findByReport(UUID reportId) {
         return dataManager.load(UserReport.class)
                 .query("select e from UserReport e where e.report.id = :reportId")
+                // Домен — ссылка, а не поле строки: без него в плане обращение к getDomain()
+                // упало бы на незагруженном атрибуте.
+                .fetchPlan(fetchPlan -> fetchPlan.addFetchPlan(FetchPlan.BASE).add("domain", FetchPlan.INSTANCE_NAME))
                 .parameter("reportId", reportId)
                 .maxResults(1)
                 .list().stream()
