@@ -1,25 +1,14 @@
-package uz.kapitalbank.umida.view.reportdomain;
+package uz.kapitalbank.umida.view.reporting;
 
 import com.vaadin.flow.router.Route;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.component.select.JmixSelect;
-import io.jmix.flowui.view.DialogMode;
-import io.jmix.flowui.view.EditedEntityContainer;
-import io.jmix.flowui.view.MessageBundle;
-import io.jmix.flowui.view.StandardDetailView;
-import io.jmix.flowui.view.Subscribe;
-import io.jmix.flowui.view.ViewComponent;
-import io.jmix.flowui.view.ViewController;
-import io.jmix.flowui.view.ViewDescriptor;
+import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.view.main.MainView;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Route(value = "report-domains/:id", layout = MainView.class)
 @ViewController(id = "umida_ReportDomain.detail")

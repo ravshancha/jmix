@@ -1,17 +1,10 @@
-package uz.kapitalbank.umida.view.reportdomain;
+package uz.kapitalbank.umida.view.reporting;
 
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.Route;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.kit.action.Action;
-import io.jmix.flowui.view.DialogMode;
-import io.jmix.flowui.view.Install;
-import io.jmix.flowui.view.LookupComponent;
-import io.jmix.flowui.view.StandardListView;
-import io.jmix.flowui.view.Subscribe;
-import io.jmix.flowui.view.ViewComponent;
-import io.jmix.flowui.view.ViewController;
-import io.jmix.flowui.view.ViewDescriptor;
+import io.jmix.flowui.view.*;
 import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.view.main.MainView;
 
