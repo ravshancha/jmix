@@ -16,6 +16,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import org.springframework.lang.Nullable;
+import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
 
 import java.util.UUID;
 
@@ -24,7 +25,8 @@ import java.util.UUID;
 @Table(name = "USER_REPORT", indexes = {
         @Index(name = "IDX_USER_REPORT_OWNER", columnList = "OWNER_ID"),
         @Index(name = "IDX_USER_REPORT_REPORT", columnList = "REPORT_ID"),
-        @Index(name = "IDX_USER_REPORT_DOMAIN", columnList = "DOMAIN_ID")
+        @Index(name = "IDX_USER_REPORT_DOMAIN", columnList = "DOMAIN_ID"),
+        @Index(name = "IDX_USER_REPORT_SUBDIVISION", columnList = "SUBDIVISION_ID")
 })
 public class UserReport {
 
@@ -61,6 +63,18 @@ public class UserReport {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "DOMAIN_ID")
     private ReportDomain domain;
+
+    /**
+     * Подразделение-владелец отчёта: в «Отчётности» именно оно стоит в колонке «Владелец», а
+     * создавший отчёт сотрудник остаётся на экране «Доступы».
+     * <p>
+     * Удаление подразделения, на которое ссылаются отчёты, запрещено — как и для области: иначе
+     * строки списка остались бы без владельца.
+     */
+    @OnDeleteInverse(DeletePolicy.DENY)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SUBDIVISION_ID")
+    private OrgStructureSubdivision subdivision;
 
     public UUID getId() {
         return id;
@@ -101,6 +115,15 @@ public class UserReport {
 
     public void setDomain(@Nullable ReportDomain domain) {
         this.domain = domain;
+    }
+
+    @Nullable
+    public OrgStructureSubdivision getSubdivision() {
+        return subdivision;
+    }
+
+    public void setSubdivision(@Nullable OrgStructureSubdivision subdivision) {
+        this.subdivision = subdivision;
     }
 
     @InstanceName

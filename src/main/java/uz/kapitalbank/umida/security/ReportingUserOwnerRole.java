@@ -39,6 +39,16 @@ public interface ReportingUserOwnerRole extends ReportingUserBasicRole, ReportsF
     void reportManage();
 
     /**
+     * Справочник подразделений: отдельным пунктом меню рядом с областями и диалогом из поля
+     * «Владелец» в карточке отчёта. Экран только на чтение — таблица наполняется выгрузкой из
+     * витрины, поэтому права на запись здесь не нужны, а саму сущность на чтение выдаёт
+     * {@link ReportingUserBasicRole}.
+     */
+    @ViewPolicy(viewIds = "umida_OrgStructureSubdivision.list")
+    @MenuPolicy(menuIds = "umida_OrgStructureSubdivision.list")
+    void reportSubdivisions();
+
+    /**
      * Редактор группы ({@code umida_ReportGroupDetailView}) — он расширяет редактор аддона
      * иконкой и цветом. Сам экран групп выдаёт {@link ReportingUserBasicRole}: сотрудник тоже
      * ходит по каталогу, но ведение групп доступно только владельцу.

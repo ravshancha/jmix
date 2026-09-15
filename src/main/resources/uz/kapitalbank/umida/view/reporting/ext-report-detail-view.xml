@@ -16,13 +16,17 @@
             <tab id="detailsTab">
                 <vbox id="detailsTabContent">
                     <formLayout id="reportForm">
-                        <!-- Группа вместо выпадающего списка аддона: группы вложенные, и выбирать
+                        <!-- Порядок полей: название, код, группа, владелец, домен. Индексы
+                             считаются по результату наследования, где первым элементом формы идёт
+                             responsiveSteps, поэтому «после кода» — это 4, 5 и 6.
+
+                             Группа вместо выпадающего списка аддона: группы вложенные, и выбирать
                              их удобнее тем же экраном с карточками и «хлебными крошками», что и в
                              «Отчётности». Аддоновский groupField убирается в
                              ExtReportDetailView#onInit — тип компонента наследованием не меняется,
                              поэтому поле заводится рядом и заменяет его. -->
                         <entityPicker id="groupPickerField"
-                                      ext:index="3"
+                                      ext:index="4"
                                       property="group"
                                       width="100%">
                             <actions>
@@ -35,11 +39,30 @@
                                 <action id="clear" type="entity_clear"/>
                             </actions>
                         </entityPicker>
+                        <!-- Подразделение-владелец отчёта. Справочник вложенный и большой,
+                             поэтому поле — picker с диалогом, а не список. Заполнять
+                             обязательно: по этой колонке «Отчётность» показывает владельца. -->
+                        <entityPicker id="subdivisionField"
+                                      ext:index="5"
+                                      label="msg://uz.kapitalbank.umida.view.reporting/reportSubdivision"
+                                      metaClass="umida_OrgStructureSubdivision"
+                                      required="true"
+                                      width="100%">
+                            <actions>
+                                <action id="lookup" type="entity_lookup">
+                                    <properties>
+                                        <property name="viewId" value="umida_OrgStructureSubdivision.list"/>
+                                        <property name="openMode" value="DIALOG"/>
+                                    </properties>
+                                </action>
+                                <action id="clear" type="entity_clear"/>
+                            </actions>
+                        </entityPicker>
                         <!-- Сразу за «Группой»: домен читается как её деловая пара.
                              Поле — picker, а не выпадающий список: у областей есть поддомены,
                              и выбирать их удобнее по дереву справочника. -->
                         <entityPicker id="domainField"
-                                      ext:index="4"
+                                      ext:index="6"
                                       label="msg://uz.kapitalbank.umida.view.reporting/reportDomain"
                                       metaClass="umida_ReportDomain"
                                       width="100%">

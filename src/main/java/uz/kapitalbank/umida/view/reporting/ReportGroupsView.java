@@ -44,7 +44,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.contextmenu.ContextMenu;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.contextmenu.MenuItem;
 import com.vaadin.flow.component.icon.Icon;
@@ -105,8 +104,6 @@ public class ReportGroupsView extends StandardListView<ReportGroup> {
     protected Div cardsBox;
     @ViewComponent
     protected Div breadcrumbBox;
-    @ViewComponent
-    protected HorizontalLayout lookupActions;
     @ViewComponent
     protected CollectionContainer<ReportGroup> groupsDc;
     @ViewComponent
@@ -190,16 +187,6 @@ public class ReportGroupsView extends StandardListView<ReportGroup> {
             this.messageKey = messageKey;
             this.sort = sort;
         }
-    }
-
-    /**
-     * Кнопки «Выбрать» и «Отмена» нужны только в диалоге выбора группы: в собственном пункте меню
-     * выбирать нечего. Обработчик выбора ставится билдером после {@code InitEvent}, поэтому режим
-     * определяется здесь, а не в {@link #onInit(InitEvent)}.
-     */
-    @Subscribe
-    public void onBeforeShow(final BeforeShowEvent event) {
-        lookupActions.setVisible(isLookupMode());
     }
 
     @Subscribe

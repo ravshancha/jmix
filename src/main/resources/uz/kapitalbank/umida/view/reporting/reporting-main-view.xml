@@ -10,6 +10,7 @@
                     <property name="group" fetchPlan="_base"/>
                 </property>
                 <property name="domain" fetchPlan="_base"/>
+                <property name="subdivision" fetchPlan="_instance_name"/>
             </fetchPlan>
             <loader id="userReportsDl"/>
         </collection>
@@ -135,7 +136,9 @@
             <columns resizable="true" sortable="true" filterable="true">
                 <column property="report.code" header="msg://reportCode" width="12em"/>
                 <column property="report.name" header="msg://reportName" flexGrow="2"/>
-                <column property="owner.username" header="msg://owner" width="12em" flexGrow="0"/>
+                <!-- Владелец отчёта — подразделение. Сотрудник, создавший отчёт, виден на
+                     экране «Доступы» первой строкой с уровнем «Владелец». -->
+                <column property="subdivision" header="msg://owner" width="16em" flexGrow="0"/>
                 <column property="report.group" header="msg://reportGroup" width="14em"/>
                 <column property="domain" header="msg://reportDomain" width="10em"/>
             </columns>

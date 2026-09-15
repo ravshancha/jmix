@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Справочник подразделений: наполняется выгрузкой из витрины DWH, поэтому идентификатор
+         строковый — тот же, что на стороне витрины. -->
+    <changeSet id="1" author="umida">
+        <createTable tableName="ORG_STRUCTURE_SUBDIVISION">
+            <column name="ID" type="VARCHAR(36)">
+                <constraints primaryKey="true" primaryKeyName="PK_ORG_STRUCTURE_SUBDIVISION"/>
+            </column>
+            <column name="NAME" type="VARCHAR(300)"/>
+            <column name="PARENT_ID" type="VARCHAR(36)"/>
+        </createTable>
+        <createIndex indexName="IDX_ORG_STRUCTURE_SUBDIVISION_PARENT" tableName="ORG_STRUCTURE_SUBDIVISION">
+            <column name="PARENT_ID"/>
+        </createIndex>
+        <addForeignKeyConstraint baseColumnNames="PARENT_ID" baseTableName="ORG_STRUCTURE_SUBDIVISION"
+                                 constraintName="FK_ORG_STRUCTURE_SUBDIVISION_ON_PARENT"
+                                 referencedColumnNames="ID" referencedTableName="ORG_STRUCTURE_SUBDIVISION"/>
+    </changeSet>
+
+    <!-- Подразделение-владелец отчёта. Колонка nullable: у строк, заведённых синхронизацией
+         отчётов, подразделения ещё нет — обязательным поле сделано в карточке отчёта. -->
+    <changeSet id="2" author="umida">
+        <addColumn tableName="USER_REPORT">
+            <column name="SUBDIVISION_ID" type="VARCHAR(36)"/>
+        </addColumn>
+        <createIndex indexName="IDX_USER_REPORT_SUBDIVISION" tableName="USER_REPORT">
+            <column name="SUBDIVISION_ID"/>
+        </createIndex>
+        <addForeignKeyConstraint baseColumnNames="SUBDIVISION_ID" baseTableName="USER_REPORT"
+                                 constraintName="FK_USER_REPORT_ON_SUBDIVISION"
+                                 referencedColumnNames="ID" referencedTableName="ORG_STRUCTURE_SUBDIVISION"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -4,8 +4,10 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import io.jmix.core.EntityStates;
+import io.jmix.core.Messages;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.component.combobox.EntityComboBox;
+import io.jmix.flowui.component.validation.ValidationErrors;
 import io.jmix.flowui.component.valuepicker.EntityPicker;
 import io.jmix.flowui.view.DefaultMainViewParent;
 import io.jmix.flowui.view.EditedEntityContainer;
@@ -20,6 +22,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.security.core.userdetails.UserDetails;
 import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.User;
+import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
 import uz.kapitalbank.umida.service.UserReportSyncService;
 
 /**
@@ -49,6 +52,8 @@ public class ExtReportDetailView extends ReportDetailView {
     private CurrentAuthentication currentAuthentication;
     @Autowired
     private UserReportSyncService userReportSyncService;
+    @Autowired
+    private Messages messages;
 
     /**
      * Форма вкладки «Отчёт» из аддона: нужна, чтобы убрать из неё аддоновский выбор группы.
@@ -62,6 +67,14 @@ public class ExtReportDetailView extends ReportDetailView {
      */
     @ViewComponent
     private EntityComboBox<ReportGroup> groupField;
+
+    /**
+     * Поле выбора подразделения-владельца: справочник открывается диалогом
+     * {@code umida_OrgStructureSubdivision.list}. Как и домен, подразделение живёт на строке
+     * «Отчётности», поэтому читается и сохраняется вручную.
+     */
+    @ViewComponent
+    private EntityPicker<OrgStructureSubdivision> subdivisionField;
 
     /**
      * Поле выбора области: значение приходит из справочника {@code umida_ReportDomain.list},
@@ -88,6 +101,20 @@ public class ExtReportDetailView extends ReportDetailView {
     public void onBeforeShowDomainField(BeforeShowEvent event) {
         if (!entityStates.isNew(getEditedEntity())) {
             domainField.setValue(userReportSyncService.domainOf(getEditedEntity().getId()));
+            subdivisionField.setValue(userReportSyncService.subdivisionOf(getEditedEntity().getId()));
+        }
+    }
+
+    /**
+     * Подразделение обязательно, но поле не привязано к контейнеру отчёта, поэтому обязательность
+     * проверяется здесь: у несвязанного поля {@code required} только рисует звёздочку и не
+     * останавливает сохранение.
+     */
+    @Subscribe
+    public void onValidationSubdivisionField(ValidationEvent event) {
+        if (subdivisionField.getValue() == null) {
+            event.addErrors(ValidationErrors.of(
+                    messages.getMessage("uz.kapitalbank.umida.view.reporting/subdivisionRequired")));
         }
     }
 
@@ -97,7 +124,9 @@ public class ExtReportDetailView extends ReportDetailView {
      */
     @Subscribe
     public void onAfterSaveDomainField(AfterSaveEvent event) {
-        userReportSyncService.assignDomain(getEditedEntity().getId(), domainField.getValue(), currentUser());
+        User currentUser = currentUser();
+        userReportSyncService.assignDomain(getEditedEntity().getId(), domainField.getValue(), currentUser);
+        userReportSyncService.assignSubdivision(getEditedEntity().getId(), subdivisionField.getValue(), currentUser);
     }
 
     @Nullable

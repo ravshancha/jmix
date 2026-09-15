@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.entity.UserReport;
+import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -205,12 +206,64 @@ public class UserReportSyncService {
                 }));
     }
 
+    /**
+     * Подразделение-владелец отчёта со строки «Отчётности» или {@code null}, если строки ещё нет
+     * либо подразделение не заполнено.
+     */
+    @Nullable
+    public OrgStructureSubdivision subdivisionOf(UUID reportId) {
+        return findByReport(reportId)
+                .map(UserReport::getSubdivision)
+                .orElse(null);
+    }
+
+    /**
+     * Проставляет отчёту подразделение-владельца — так же, как {@link #assignDomain}: строку
+     * «Отчётности» при необходимости заводит {@link #linkReport(UUID, User)}.
+     * <p>
+     * Сравниваются идентификаторы, а не объекты: подразделение приходит из витрины отдельной
+     * загрузкой, поэтому экземпляры разные даже для одной и той же строки.
+     *
+     * @param fallbackOwner владелец для строки, если её приходится создавать
+     * @return true, если подразделение сохранено; false, если строку создать не удалось
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean assignSubdivision(UUID reportId, @Nullable OrgStructureSubdivision subdivision,
+                                     @Nullable User fallbackOwner) {
+        linkReport(reportId, fallbackOwner);
+
+        return systemAuthenticator.withSystem(() -> findByReport(reportId)
+                .map(userReport -> {
+                    if (Objects.equals(subdivisionId(userReport.getSubdivision()), subdivisionId(subdivision))) {
+                        return true;
+                    }
+                    userReport.setSubdivision(subdivision);
+                    dataManager.save(userReport);
+                    return true;
+                })
+                .orElseGet(() -> {
+                    log.warn("Report {} has no Reporting row, subdivision not saved", reportId);
+                    return false;
+                }));
+    }
+
+    /**
+     * Идентификатор подразделения или {@code null} — по той же причине, что и у области:
+     * экземпляры из разных загрузок не равны друг другу.
+     */
+    @Nullable
+    private static String subdivisionId(@Nullable OrgStructureSubdivision subdivision) {
+        return subdivision == null ? null : subdivision.getId();
+    }
+
     private Optional<UserReport> findByReport(UUID reportId) {
         return dataManager.load(UserReport.class)
                 .query("select e from UserReport e where e.report.id = :reportId")
                 // Домен — ссылка, а не поле строки: без него в плане обращение к getDomain()
                 // упало бы на незагруженном атрибуте.
-                .fetchPlan(fetchPlan -> fetchPlan.addFetchPlan(FetchPlan.BASE).add("domain", FetchPlan.INSTANCE_NAME))
+                .fetchPlan(fetchPlan -> fetchPlan.addFetchPlan(FetchPlan.BASE)
+                        .add("domain", FetchPlan.INSTANCE_NAME)
+                        .add("subdivision", FetchPlan.INSTANCE_NAME))
                 .parameter("reportId", reportId)
                 .maxResults(1)
                 .list().stream()

@@ -11,6 +11,11 @@
         <ModuleSettings>
           <option name="dataStoreOptionsV2">
             <map>
+              <entry key="dwhstarrocks">
+                <value>
+                  <DataStoreSettingsV2 />
+                </value>
+              </entry>
               <entry key="main">
                 <value>
                   <DataStoreSettingsV2>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://orgStructureSubdivisionListView.title"
+      focusComponent="nameFilterField">
+    <data>
+        <collection id="subdivisionsDc" class="uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision">
+            <fetchPlan extends="_base">
+                <property name="parent" fetchPlan="_instance_name"/>
+            </fetchPlan>
+            <loader id="subdivisionsDl">
+                <query>
+                    <![CDATA[select e from umida_OrgStructureSubdivision e order by e.name]]>
+                    <!-- Условие включается только тогда, когда параметр задан: пустая строка
+                         поиска его снимает, см. OrgStructureSubdivisionListView#reload. -->
+                    <condition>
+                        <jpql>
+                            <where>lower(e.name) like :nameFilter</where>
+                        </jpql>
+                    </condition>
+                </query>
+            </loader>
+        </collection>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+
+    <layout>
+        <!-- Подразделений много, поэтому список постраничный, а не дерево: нужное ищется по
+             названию, а вышестоящее подразделение видно отдельной колонкой. -->
+        <textField id="nameFilterField"
+                   label="msg://filter.name"
+                   placeholder="msg://filter.name.placeholder"
+                   clearButtonVisible="true"
+                   valueChangeMode="LAZY"
+                   width="24em"/>
+        <dataGrid id="subdivisionsDataGrid"
+                  dataContainer="subdivisionsDc"
+                  width="100%"
+                  minHeight="20em"
+                  columnReorderingAllowed="true">
+            <columns resizable="true">
+                <column property="name" flexGrow="2"/>
+                <column property="parent" flexGrow="1"/>
+            </columns>
+        </dataGrid>
+        <simplePagination dataLoader="subdivisionsDl"/>
+        <hbox id="lookupActions" visible="false">
+            <button id="selectButton" action="selectAction"/>
+            <button id="discardButton" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>

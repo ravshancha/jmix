@@ -21,6 +21,7 @@ import uz.kapitalbank.umida.entity.ReportAccessRow;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.UserReport;
+import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
 
 
 /**
@@ -73,6 +74,15 @@ public interface ReportingUserBasicRole extends UiMinimalPolicies {
             attributes = {"username", "firstName", "lastName", "email"},
             action = EntityAttributePolicyAction.VIEW)
     void reportList();
+
+    /**
+     * Подразделение-владелец: справочник витрины только на чтение — сотрудник видит его в колонке
+     * «Владелец» списка, а ведётся он на стороне DWH.
+     */
+    @EntityPolicy(entityClass = OrgStructureSubdivision.class, actions = EntityPolicyAction.READ)
+    @EntityAttributePolicy(entityClass = OrgStructureSubdivision.class, attributes = "*",
+            action = EntityAttributePolicyAction.VIEW)
+    void reportSubdivision();
 
     /**
      * Домен отчёта: справочник только на чтение — сотрудник им фильтрует список и видит колонку,
