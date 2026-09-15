@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
-    Расширение экрана отчёта из аддона: к вкладке «Отчёт» добавляется только поле «Домен», всё
-    остальное берётся из io/jmix/reportsflowui/view/report/report-detail-view.xml.
+    Расширение экрана отчёта из аддона: на вкладке «Отчёт» группа выбирается диалогом справочника
+    и добавлено поле «Домен», всё остальное берётся из
+    io/jmix/reportsflowui/view/report/report-detail-view.xml.
 
     messagesGroup оставлен аддоновским, чтобы унаследованные msg:// ключи продолжали
     разрешаться; собственная подпись поля берётся по полному ключу.
@@ -15,11 +16,30 @@
             <tab id="detailsTab">
                 <vbox id="detailsTabContent">
                     <formLayout id="reportForm">
+                        <!-- Группа вместо выпадающего списка аддона: группы вложенные, и выбирать
+                             их удобнее тем же экраном с карточками и «хлебными крошками», что и в
+                             «Отчётности». Аддоновский groupField убирается в
+                             ExtReportDetailView#onInit — тип компонента наследованием не меняется,
+                             поэтому поле заводится рядом и заменяет его. -->
+                        <entityPicker id="groupPickerField"
+                                      ext:index="3"
+                                      property="group"
+                                      width="100%">
+                            <actions>
+                                <action id="lookup" type="entity_lookup">
+                                    <properties>
+                                        <property name="viewId" value="umida_ReportingGroupsView"/>
+                                        <property name="openMode" value="DIALOG"/>
+                                    </properties>
+                                </action>
+                                <action id="clear" type="entity_clear"/>
+                            </actions>
+                        </entityPicker>
                         <!-- Сразу за «Группой»: домен читается как её деловая пара.
                              Поле — picker, а не выпадающий список: у областей есть поддомены,
                              и выбирать их удобнее по дереву справочника. -->
                         <entityPicker id="domainField"
-                                      ext:index="3"
+                                      ext:index="4"
                                       label="msg://uz.kapitalbank.umida.view.reporting/reportDomain"
                                       metaClass="umida_ReportDomain"
                                       width="100%">

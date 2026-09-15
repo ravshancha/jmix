@@ -1,9 +1,11 @@
 package uz.kapitalbank.umida.view.reporting;
 
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import io.jmix.core.EntityStates;
 import io.jmix.core.security.CurrentAuthentication;
+import io.jmix.flowui.component.combobox.EntityComboBox;
 import io.jmix.flowui.component.valuepicker.EntityPicker;
 import io.jmix.flowui.view.DefaultMainViewParent;
 import io.jmix.flowui.view.EditedEntityContainer;
@@ -11,6 +13,7 @@ import io.jmix.flowui.view.Subscribe;
 import io.jmix.flowui.view.ViewComponent;
 import io.jmix.flowui.view.ViewController;
 import io.jmix.flowui.view.ViewDescriptor;
+import io.jmix.reports.entity.ReportGroup;
 import io.jmix.reportsflowui.view.report.ReportDetailView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
@@ -48,12 +51,34 @@ public class ExtReportDetailView extends ReportDetailView {
     private UserReportSyncService userReportSyncService;
 
     /**
+     * Форма вкладки «Отчёт» из аддона: нужна, чтобы убрать из неё аддоновский выбор группы.
+     */
+    @ViewComponent
+    private FormLayout reportForm;
+
+    /**
+     * Выпадающий список групп из аддона. Плоский список группам не подходит — они вложенные,
+     * поэтому поле убирается с формы, а вместо него показывается {@code groupPickerField}.
+     */
+    @ViewComponent
+    private EntityComboBox<ReportGroup> groupField;
+
+    /**
      * Поле выбора области: значение приходит из справочника {@code umida_ReportDomain.list},
      * который открывается диалогом действием {@code lookup}. Списком значений здесь не
      * управляют — у областей есть поддомены, и дерево справочника показывает их само.
      */
     @ViewComponent
     private EntityPicker<ReportDomain> domainField;
+
+    /**
+     * Заменить компонент наследованием дескриптора нельзя — расширение меняет только атрибуты
+     * элемента, но не его тип, поэтому аддоновское поле снимается с формы здесь.
+     */
+    @Subscribe
+    public void onInitRemoveAddonGroupField(InitEvent event) {
+        reportForm.remove(groupField);
+    }
 
     /**
      * У нового отчёта строки «Отчётности» ещё нет, поэтому читать нечего: поле остаётся пустым до
