@@ -103,20 +103,31 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
     @ViewComponent
     private JmixButton requestAccessButton;
     @ViewComponent
+    private JmixButton grantAccessButton;
+    @ViewComponent
+    private JmixButton editAccessButton;
+    @ViewComponent
     private JmixButton revokeAccessButton;
+    @ViewComponent
+    private JmixButton approveButton;
+    @ViewComponent
+    private JmixButton rejectButton;
 
     private MainView headerHost;
     private Report report;
     private boolean decisionMaker;
     /**
-     * Владелец отчёта: только он закрывает и отзывает выданные доступы.
+     * Распорядитель доступов — владелец отчёта или администратор: только они закрывают и
+     * отзывают выданные доступы. Делегату с уровнем GRANT это недоступно.
      */
-    private boolean owner;
+    private boolean manager;
 
     @Subscribe
     public void onInit(InitEvent event) {
         // Кнопка «Запросить доступ» становится акцентной только когда выбран адресат — как в дизайне.
         grantorsDataGrid.addSelectionListener(selection -> updateRequestButton());
+        allDataGrid.addSelectionListener(selection -> updateAllTabButtons());
+        requestsDataGrid.addSelectionListener(selection -> updateDecisionButtons());
 
         // «‹ Доступы» и название отчёта живут в верхней панели приложения, а не в теле экрана.
         addAttachListener(e -> {
@@ -147,7 +158,7 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         report = dataManager.load(Report.class).id(UUID.fromString(reportId)).one();
         reportTitle.setText(messageBundle.formatMessage("reportSubject", report.getName()));
         decisionMaker = reportAccessService.canDecide(currentUser(), report);
-        owner = reportAccessService.isOwner(currentUser(), report);
+        manager = reportAccessService.canManage(currentUser(), report);
         applyTabs();
         reloadAll();
     }
@@ -164,7 +175,8 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         // Смена индекса выше не всегда даёт событие (индекс мог и не измениться), поэтому
         // название отчёта ставится на место явно.
         placeReportTitle();
-        revokeAccessButton.setVisible(owner);
+        revokeAccessButton.setVisible(manager);
+        updateAllTabButtons();
     }
 
     /**
@@ -199,6 +211,37 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         }
         grantorRowsDc.setItems(reportAccessService.grantorRows(report, currentUser()));
         updateRequestButton();
+        updateAllTabButtons();
+        updateDecisionButtons();
+    }
+
+    /**
+     * Кнопки вкладки «Все» смотрят на выбранную строку: без выбора они неактивны. На себе они
+     * тоже заблокированы: свой доступ не выдают, не настраивают и не закрывают — владелец иначе
+     * отрезал бы себя от собственного отчёта. Закрывать нечего и на строке владельца: доступа как
+     * строки у него нет, он есть по определению.
+     */
+    private void updateAllTabButtons() {
+        ReportAccessRow row = allDataGrid.getSingleSelectedItem();
+        boolean self = isSelf(row);
+        boolean other = row != null && !self;
+        grantAccessButton.setEnabled(other);
+        editAccessButton.setEnabled(other);
+        revokeAccessButton.setEnabled(manager && !self && row != null && row.getAccessId() != null);
+    }
+
+    /**
+     * «Одобрить» и «Отклонить» решают выбранную заявку, поэтому без выбора они неактивны.
+     */
+    private void updateDecisionButtons() {
+        boolean selected = requestsDataGrid.getSingleSelectedItem() != null;
+        approveButton.setEnabled(selected);
+        rejectButton.setEnabled(selected);
+    }
+
+    private boolean isSelf(@Nullable ReportAccessRow row) {
+        User current = currentUser();
+        return row != null && current != null && current.getId().equals(row.getUserId());
     }
 
     /**
@@ -276,18 +319,24 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
     }
 
     /**
-     * Закрыть выданный доступ вправе только владелец отчёта: делегат с уровнем GRANT доступ
-     * выдаёт, но не отзывает.
+     * Закрыть выданный доступ вправе владелец отчёта и администратор: делегат с уровнем GRANT
+     * доступ выдаёт, но не отзывает.
      */
     @Subscribe("revokeAccessButton")
     public void onRevokeAccess(ClickEvent<Button> event) {
-        if (!owner) {
+        if (!manager) {
             notifications.create(messageBundle.getMessage("revokeOwnerOnly"))
                     .withType(Notifications.Type.WARNING)
                     .show();
             return;
         }
         ReportAccessRow row = allDataGrid.getSingleSelectedItem();
+        if (isSelf(row)) {
+            notifications.create(messageBundle.getMessage("revokeSelfForbidden"))
+                    .withType(Notifications.Type.WARNING)
+                    .show();
+            return;
+        }
         if (row == null || row.getAccessId() == null) {
             notifications.create(messageBundle.getMessage("selectAccessRow"))
                     .withType(Notifications.Type.WARNING)
@@ -315,6 +364,9 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
 
     @Subscribe("grantAccessButton")
     public void onGrantAccess(ClickEvent<Button> event) {
+        if (isSelf(allDataGrid.getSingleSelectedItem())) {
+            return;
+        }
         notifications.create(messageBundle.getMessage("grantAccessFromRequests"))
                 .withType(Notifications.Type.WARNING)
                 .show();

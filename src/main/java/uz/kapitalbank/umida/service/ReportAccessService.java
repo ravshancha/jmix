@@ -2,9 +2,13 @@ package uz.kapitalbank.umida.service;
 
 import io.jmix.core.DataManager;
 import io.jmix.core.SaveContext;
+import io.jmix.core.accesscontext.SpecificOperationAccessContext;
+import io.jmix.core.AccessManager;
+import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.core.security.SystemAuthenticator;
 import io.jmix.reports.entity.Report;
 import org.springframework.lang.Nullable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import uz.kapitalbank.umida.entity.OrgStructureEmployee;
 import uz.kapitalbank.umida.entity.ReportAccess;
@@ -51,12 +55,24 @@ public class ReportAccessService {
      */
     public static final String AUTO_CANCEL_REASON = "msg://autoCancelReason";
 
+    /**
+     * Право администратора на модель доступа: он видит и решает всё по любому отчёту, как если бы
+     * был его владельцем. Отдельного разрешения никому не выдают — оно приходит из
+     * {@code system-full-access} с его политикой {@code resources = "*"}.
+     */
+    public static final String ADMINISTER_REPORT_ACCESS = "reportAccess.administer";
+
     private final DataManager dataManager;
     private final SystemAuthenticator systemAuthenticator;
+    private final CurrentAuthentication currentAuthentication;
+    private final AccessManager accessManager;
 
-    public ReportAccessService(DataManager dataManager, SystemAuthenticator systemAuthenticator) {
+    public ReportAccessService(DataManager dataManager, SystemAuthenticator systemAuthenticator,
+                               CurrentAuthentication currentAuthentication, AccessManager accessManager) {
         this.dataManager = dataManager;
         this.systemAuthenticator = systemAuthenticator;
+        this.currentAuthentication = currentAuthentication;
+        this.accessManager = accessManager;
     }
 
     // ---------------------------------------------------------------- запросы
@@ -250,7 +266,7 @@ public class ReportAccessService {
      * Уровень доступа сотрудника к отчёту с учётом владельца и срока действия.
      */
     public AccessLevel level(User user, Report report) {
-        if (isOwner(user, report)) {
+        if (isAdministrator(user) || isOwner(user, report)) {
             return AccessLevel.OWNER;
         }
         ReportAccess access = activeAccess(user, report);
@@ -261,7 +277,7 @@ public class ReportAccessService {
     }
 
     /**
-     * Может ли сотрудник решать заявки по отчёту: владелец или обладатель GRANT.
+     * Может ли сотрудник решать заявки по отчёту: владелец, администратор или обладатель GRANT.
      */
     public boolean canDecide(User user, Report report) {
         AccessLevel level = level(user, report);
@@ -276,6 +292,38 @@ public class ReportAccessService {
                 .maxResults(1)
                 .list()
                 .isEmpty());
+    }
+
+    /**
+     * Кто распоряжается выданными доступами по отчёту — закрывает их и правит: владелец и
+     * администратор. Делегат с уровнем GRANT доступ выдаёт, но не отзывает.
+     */
+    public boolean canManage(User user, Report report) {
+        return isAdministrator(user) || isOwner(user, report);
+    }
+
+    /**
+     * Администратор ли переданный сотрудник — то есть тот, кому всё по любому отчёту видно и
+     * решаемо наравне с владельцем.
+     * <p>
+     * Разрешение проверяется у текущей сессии, поэтому метод сначала убеждается, что спрашивают
+     * именно про вошедшего пользователя. Заодно это страхует от вызова внутри
+     * {@link SystemAuthenticator#withSystem}: там текущий пользователь — системный, у него прав
+     * всегда хватает, и без сверки любой сотрудник оказался бы администратором.
+     */
+    public boolean isAdministrator(@Nullable User user) {
+        if (user == null || !isCurrentUser(user)) {
+            return false;
+        }
+        SpecificOperationAccessContext context =
+                new SpecificOperationAccessContext(ADMINISTER_REPORT_ACCESS);
+        accessManager.applyRegisteredConstraints(context);
+        return context.isPermitted();
+    }
+
+    private boolean isCurrentUser(User user) {
+        UserDetails current = currentAuthentication.isSet() ? currentAuthentication.getUser() : null;
+        return current instanceof User appUser && appUser.getId().equals(user.getId());
     }
 
     @Nullable
@@ -377,9 +425,20 @@ public class ReportAccessService {
 
     /**
      * Идентификаторы отчётов, которые сотрудник вправе запускать: свои плюс выданные ему.
+     * Администратору — все.
      */
     public Set<UUID> availableReportIds(User user) {
+        boolean administrator = isAdministrator(user);
         return systemAuthenticator.withSystem(() -> {
+            if (administrator) {
+                // Администратору доступен весь каталог, а не только свои и выданные отчёты.
+                return dataManager.load(UserReport.class)
+                        .all()
+                        .list()
+                        .stream()
+                        .map(userReport -> userReport.getReport().getId())
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+            }
             Set<UUID> ids = dataManager.load(UserReport.class)
                     .query("select e from UserReport e where e.owner = :owner")
                     .parameter("owner", user)
