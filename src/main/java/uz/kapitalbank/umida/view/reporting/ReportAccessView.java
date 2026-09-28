@@ -176,6 +176,8 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         // название отчёта ставится на место явно.
         placeReportTitle();
         revokeAccessButton.setVisible(manager);
+        // Владельцу и администратору доступ полный по определению — просить им нечего.
+        requestAccessButton.setVisible(!manager);
         updateAllTabButtons();
     }
 
@@ -219,7 +221,8 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
      * Кнопки вкладки «Все» смотрят на выбранную строку: без выбора они неактивны. На себе они
      * тоже заблокированы: свой доступ не выдают, не настраивают и не закрывают — владелец иначе
      * отрезал бы себя от собственного отчёта. Закрывать нечего и на строке владельца: доступа как
-     * строки у него нет, он есть по определению.
+     * строки у него нет, он есть по определению. Не закрывается и доступ администратора: он и без
+     * строки видит всё, закрытие ничего бы не изменило.
      */
     private void updateAllTabButtons() {
         ReportAccessRow row = allDataGrid.getSingleSelectedItem();
@@ -227,7 +230,8 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         boolean other = row != null && !self;
         grantAccessButton.setEnabled(other);
         editAccessButton.setEnabled(other);
-        revokeAccessButton.setEnabled(manager && !self && row != null && row.getAccessId() != null);
+        revokeAccessButton.setEnabled(manager && other && row.getAccessId() != null
+                && !reportAccessService.holdsAdministration(reportAccessService.user(row.getUserId())));
     }
 
     /**
@@ -331,12 +335,6 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
             return;
         }
         ReportAccessRow row = allDataGrid.getSingleSelectedItem();
-        if (isSelf(row)) {
-            notifications.create(messageBundle.getMessage("revokeSelfForbidden"))
-                    .withType(Notifications.Type.WARNING)
-                    .show();
-            return;
-        }
         if (row == null || row.getAccessId() == null) {
             notifications.create(messageBundle.getMessage("selectAccessRow"))
                     .withType(Notifications.Type.WARNING)

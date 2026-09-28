@@ -7,6 +7,13 @@ import io.jmix.core.AccessManager;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.core.security.SystemAuthenticator;
 import io.jmix.reports.entity.Report;
+import io.jmix.security.model.ResourcePolicy;
+import io.jmix.security.model.ResourcePolicyEffect;
+import io.jmix.security.model.ResourcePolicyType;
+import io.jmix.security.model.ResourceRole;
+import io.jmix.security.role.ResourceRoleRepository;
+import io.jmix.security.role.assignment.RoleAssignment;
+import io.jmix.security.role.assignment.RoleAssignmentRepository;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -66,13 +73,19 @@ public class ReportAccessService {
     private final SystemAuthenticator systemAuthenticator;
     private final CurrentAuthentication currentAuthentication;
     private final AccessManager accessManager;
+    private final RoleAssignmentRepository roleAssignmentRepository;
+    private final ResourceRoleRepository resourceRoleRepository;
 
     public ReportAccessService(DataManager dataManager, SystemAuthenticator systemAuthenticator,
-                               CurrentAuthentication currentAuthentication, AccessManager accessManager) {
+                               CurrentAuthentication currentAuthentication, AccessManager accessManager,
+                               RoleAssignmentRepository roleAssignmentRepository,
+                               ResourceRoleRepository resourceRoleRepository) {
         this.dataManager = dataManager;
         this.systemAuthenticator = systemAuthenticator;
         this.currentAuthentication = currentAuthentication;
         this.accessManager = accessManager;
+        this.roleAssignmentRepository = roleAssignmentRepository;
+        this.resourceRoleRepository = resourceRoleRepository;
     }
 
     // ---------------------------------------------------------------- запросы
@@ -321,6 +334,27 @@ public class ReportAccessService {
         return context.isPermitted();
     }
 
+    /**
+     * Администратор ли произвольный сотрудник — не текущий, а, например, выбранный в таблице.
+     * Сессии у него нет, поэтому право ищется в назначенных ему ролях: политика на
+     * {@link #ADMINISTER_REPORT_ACCESS} или на все ресурсы сразу.
+     */
+    public boolean holdsAdministration(User user) {
+        for (RoleAssignment assignment : roleAssignmentRepository.getAssignmentsByUsername(user.getUsername())) {
+            ResourceRole role = resourceRoleRepository.findRoleByCode(assignment.getRoleCode());
+            if (role != null && role.getAllResourcePolicies().stream().anyMatch(this::administers)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean administers(ResourcePolicy policy) {
+        return ResourcePolicyType.SPECIFIC.equals(policy.getType())
+                && ResourcePolicyEffect.ALLOW.equals(policy.getEffect())
+                && (ADMINISTER_REPORT_ACCESS.equals(policy.getResource()) || "*".equals(policy.getResource()));
+    }
+
     private boolean isCurrentUser(User user) {
         UserDetails current = currentAuthentication.isSet() ? currentAuthentication.getUser() : null;
         return current instanceof User appUser && appUser.getId().equals(user.getId());
@@ -458,7 +492,9 @@ public class ReportAccessService {
     }
 
     /**
-     * Строки для таблиц экрана «Доступы»: владелец отчёта первым, затем действующие доступы.
+     * Строки для таблиц экрана «Доступы»: владелец отчёта первым, затем действующие доступы, затем
+     * те, кто подал заявку и ждёт решения. У заявителя отметка «Заявка отправлена»; если доступ у
+     * него уже есть (просит повышения), новой строки не заводится — отметка ставится на его строку.
      */
     public List<ReportAccessRow> accessRows(Report report) {
         return systemAuthenticator.withSystem(() -> {
@@ -474,17 +510,28 @@ public class ReportAccessService {
                 rows.add(row(access.getUser(), access.getAccessLevel(),
                         access.getValidFrom(), access.getValidTo(), access.getId()));
             }
+            Map<UUID, ReportAccessRow> byUser = new HashMap<>();
+            rows.forEach(row -> byUser.put(row.getUserId(), row));
+            for (ReportAccessRequest request : pendingRequests(report)) {
+                ReportAccessRow row = byUser.get(request.getRequester().getId());
+                if (row == null) {
+                    row = row(request.getRequester(), AccessLevel.NONE, null, null, null);
+                    byUser.put(row.getUserId(), row);
+                    rows.add(row);
+                }
+                row.setGrantorStatus(GrantorStatus.PENDING);
+            }
             return rows;
         });
     }
 
     /**
-     * Строки вкладки «Доступы» у обычного сотрудника: у кого можно попросить доступ, кто уже выдал
-     * текущий доступ и к кому заявка ещё на рассмотрении.
+     * Строки вкладки «Доступы» у обычного сотрудника: те же, что у владельца, — доступы и ждущие
+     * заявители, включая самого сотрудника. Дополнительно отмечено, кто выдал ему текущий доступ
+     * и к кому ушла его заявка.
      */
     public List<ReportAccessRow> grantorRows(Report report, @Nullable User requester) {
         return systemAuthenticator.withSystem(() -> {
-            User owner = owner(report);
             ReportAccess current = requester == null ? null : activeAccess(requester, report);
             UUID grantedById = current == null || current.getGrantedBy() == null
                     ? null : current.getGrantedBy().getId();
@@ -494,19 +541,18 @@ public class ReportAccessService {
                     .map(request -> request.getAddressee().getId())
                     .collect(Collectors.toCollection(LinkedHashSet::new));
 
-            List<ReportAccessRow> rows = new ArrayList<>();
-            for (User user : grantors(report, requester)) {
-                boolean isOwner = owner != null && owner.getId().equals(user.getId());
-                ReportAccessRow row = row(user, isOwner ? AccessLevel.OWNER : AccessLevel.GRANT,
-                        null, null, null);
-                if (user.getId().equals(grantedById)) {
+            List<ReportAccessRow> rows = accessRows(report);
+            for (ReportAccessRow row : rows) {
+                if (row.getGrantorStatus() == GrantorStatus.PENDING) {
+                    continue;
+                }
+                if (row.getUserId().equals(grantedById)) {
                     row.setGrantorStatus(GrantorStatus.GRANTED);
-                } else if (pendingAddressees.contains(user.getId())) {
+                } else if (pendingAddressees.contains(row.getUserId())) {
                     row.setGrantorStatus(GrantorStatus.PENDING);
                 } else {
                     row.setGrantorStatus(GrantorStatus.NONE);
                 }
-                rows.add(row);
             }
             return rows;
         });
@@ -515,12 +561,12 @@ public class ReportAccessService {
     /**
      * Можно ли просить доступ у выбранного сотрудника.
      * <p>
-     * Нельзя, когда доступ уже есть — любого уровня, включая READ, — и когда к этому же сотруднику
-     * заявка уже отправлена. Заявка, висящая на другом сотруднике, не мешает: просить можно у
-     * нескольких, а лишние закроются, как только один выдаст доступ.
+     * Просят только у владельца отчёта: остальные строки списка лишь показывают, у кого доступ
+     * есть. Нельзя, когда доступ уже есть — любого уровня, включая READ, — и когда заявка
+     * владельцу уже отправлена и ещё не решена.
      */
     public boolean canRequestFrom(User requester, Report report, ReportAccessRow grantorRow) {
-        if (level(requester, report) != AccessLevel.NONE) {
+        if (grantorRow.getAccessLevel() != AccessLevel.OWNER || level(requester, report) != AccessLevel.NONE) {
             return false;
         }
         return grantorRow.getGrantorStatus() != GrantorStatus.PENDING;

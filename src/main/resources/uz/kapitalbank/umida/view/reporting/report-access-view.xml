@@ -55,6 +55,7 @@
                             <column property="accessLevel" header="msg://column.accessLevel" width="16em"/>
                             <column property="validFrom" header="msg://column.validFrom" width="12em"/>
                             <column property="validTo" header="msg://column.validTo" width="12em"/>
+                            <column property="grantorStatus" header="msg://column.grantorStatus" width="18em"/>
                         </columns>
                     </dataGrid>
                 </vbox>
