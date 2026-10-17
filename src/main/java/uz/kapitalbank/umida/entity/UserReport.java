@@ -16,7 +16,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import org.springframework.lang.Nullable;
-import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
 
 import java.util.UUID;
 

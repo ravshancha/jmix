@@ -18,10 +18,12 @@ import uz.kapitalbank.umida.entity.ReportAccess;
 import uz.kapitalbank.umida.entity.ReportAccessEvent;
 import uz.kapitalbank.umida.entity.ReportAccessRequest;
 import uz.kapitalbank.umida.entity.ReportAccessRow;
+import uz.kapitalbank.umida.entity.ReportSubdivisionAccess;
+import uz.kapitalbank.umida.entity.ReportSubdivisionRow;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.UserReport;
-import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
+import uz.kapitalbank.umida.entity.OrgStructureSubdivision;
 
 
 /**
@@ -102,10 +104,14 @@ public interface ReportingUserBasicRole extends UiMinimalPolicies {
     @EntityPolicy(entityClass = ReportAccessRequest.class, actions = EntityPolicyAction.READ)
     @EntityPolicy(entityClass = ReportAccessEvent.class, actions = EntityPolicyAction.READ)
     @EntityPolicy(entityClass = ReportAccessRow.class, actions = EntityPolicyAction.READ)
+    @EntityPolicy(entityClass = ReportSubdivisionAccess.class, actions = EntityPolicyAction.READ)
+    @EntityPolicy(entityClass = ReportSubdivisionRow.class, actions = EntityPolicyAction.READ)
     @EntityAttributePolicy(entityClass = ReportAccess.class, attributes = "*", action = EntityAttributePolicyAction.VIEW)
     @EntityAttributePolicy(entityClass = ReportAccessRequest.class, attributes = "*", action = EntityAttributePolicyAction.VIEW)
     @EntityAttributePolicy(entityClass = ReportAccessEvent.class, attributes = "*", action = EntityAttributePolicyAction.VIEW)
     @EntityAttributePolicy(entityClass = ReportAccessRow.class, attributes = "*", action = EntityAttributePolicyAction.VIEW)
+    @EntityAttributePolicy(entityClass = ReportSubdivisionAccess.class, attributes = "*", action = EntityAttributePolicyAction.VIEW)
+    @EntityAttributePolicy(entityClass = ReportSubdivisionRow.class, attributes = "*", action = EntityAttributePolicyAction.VIEW)
     void reportAccess();
 
     /**

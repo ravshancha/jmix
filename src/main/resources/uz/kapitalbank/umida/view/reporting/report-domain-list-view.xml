@@ -7,6 +7,7 @@
             <fetchPlan extends="_base">
                 <property name="parent" fetchPlan="_instance_name"/>
                 <property name="businessOwner" fetchPlan="_instance_name"/>
+                <property name="subdivision" fetchPlan="_instance_name"/>
             </fetchPlan>
             <!-- Дерево собирается в памяти по ссылке на родителя, поэтому уровни не
                  догружаются по одному: выбираются все области сразу, страниц нет. -->
@@ -43,6 +44,7 @@
                 <column property="code" width="12em" flexGrow="0"/>
                 <column property="longName"/>
                 <column property="businessOwner" width="18em"/>
+                <column property="subdivision" width="18em"/>
                 <column property="language" width="8em" flexGrow="0"/>
             </columns>
         </treeDataGrid>

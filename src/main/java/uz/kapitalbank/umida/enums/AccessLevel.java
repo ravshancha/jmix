@@ -8,14 +8,16 @@ import org.springframework.lang.Nullable;
  * <p>
  * NONE в базе не хранится — это отсутствие строки {@code ReportAccess}; значение нужно, чтобы
  * экраны могли единообразно показывать «нет доступа». OWNER выводится из {@code UserReport.owner},
- * отдельной строкой доступа владелец не заводится.
+ * SUBDIVISION_OWNER — у сотрудников подразделения-владельца ({@code UserReport.subdivision}) и
+ * вложенных в него; ни тот, ни другой отдельной строкой доступа не заводятся.
  */
 public enum AccessLevel implements EnumClass<String> {
 
     NONE("NONE"),
     READ("READ"),
     GRANT("GRANT"),
-    OWNER("OWNER");
+    OWNER("OWNER"),
+    SUBDIVISION_OWNER("SUBDIVISION_OWNER");
 
     private final String id;
 

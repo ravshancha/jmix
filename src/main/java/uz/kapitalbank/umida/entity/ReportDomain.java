@@ -39,7 +39,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 @Table(name = "REPORT_DOMAIN", indexes = {
         @Index(name = "IDX_REPORT_DOMAIN_CODE", columnList = "CODE", unique = true),
         @Index(name = "IDX_REPORT_DOMAIN_PARENT", columnList = "PARENT_ID"),
-        @Index(name = "IDX_REPORT_DOMAIN_BUSINESS_OWNER", columnList = "BUSINESS_OWNER_ID")
+        @Index(name = "IDX_REPORT_DOMAIN_BUSINESS_OWNER", columnList = "BUSINESS_OWNER_ID"),
+        @Index(name = "IDX_REPORT_DOMAIN_SUBDIVISION", columnList = "SUBDIVISION_ID")
 })
 public class ReportDomain {
 
@@ -91,6 +92,16 @@ public class ReportDomain {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "BUSINESS_OWNER_ID")
     private OrgStructureEmployee businessOwner;
+
+    /**
+     * Подразделение-владелец области. Связь отдельная от подразделения-владельца отчёта
+     * ({@code UserReport.subdivision}): сотрудники обоих подразделений распоряжаются доступами к
+     * отчётам области. Удаление подразделения, на которое ссылаются области, запрещено.
+     */
+    @OnDeleteInverse(DeletePolicy.DENY)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SUBDIVISION_ID")
+    private OrgStructureSubdivision subdivision;
 
     /**
      * Язык названий области, код вида {@code uz}, {@code ru}, {@code en}.
@@ -164,6 +175,15 @@ public class ReportDomain {
 
     public void setBusinessOwner(@Nullable OrgStructureEmployee businessOwner) {
         this.businessOwner = businessOwner;
+    }
+
+    @Nullable
+    public OrgStructureSubdivision getSubdivision() {
+        return subdivision;
+    }
+
+    public void setSubdivision(@Nullable OrgStructureSubdivision subdivision) {
+        this.subdivision = subdivision;
     }
 
     @Nullable

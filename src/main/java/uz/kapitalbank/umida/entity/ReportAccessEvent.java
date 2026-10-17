@@ -66,6 +66,15 @@ public class ReportAccessEvent {
     @JoinColumn(name = "REQUEST_ID")
     private ReportAccessRequest request;
 
+    /**
+     * Подразделение, о доступе которого идёт речь, — заполнено вместо {@link #subjectUser}, когда
+     * доступ выдавали или закрывали подразделению целиком.
+     */
+    @OnDeleteInverse(DeletePolicy.CASCADE)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SUBDIVISION_ID")
+    private OrgStructureSubdivision subdivision;
+
     @Column(name = "REQUEST_REASON", length = 1000)
     private String requestReason;
 
@@ -132,6 +141,14 @@ public class ReportAccessEvent {
 
     public void setRequest(ReportAccessRequest request) {
         this.request = request;
+    }
+
+    public OrgStructureSubdivision getSubdivision() {
+        return subdivision;
+    }
+
+    public void setSubdivision(OrgStructureSubdivision subdivision) {
+        this.subdivision = subdivision;
     }
 
     public String getRequestReason() {

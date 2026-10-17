@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1" author="umida">
+        <dropForeignKeyConstraint baseTableName="REPORT_SUBDIVISION_ACCESS"
+                                  constraintName="FK_REPORT_SUBDIVISION_ACCESS_ON_REPORT"/>
+    </changeSet>
+    <changeSet id="2" author="umida">
+        <addForeignKeyConstraint baseColumnNames="REPORT_ID" baseTableName="REPORT_SUBDIVISION_ACCESS"
+                                 constraintName="FK_REPORT_SUBDIVISION_ACCESS_ON_REPORT" referencedColumnNames="ID"
+                                 referencedTableName="REPORT_REPORT"/>
+    </changeSet>
+</databaseChangeLog>

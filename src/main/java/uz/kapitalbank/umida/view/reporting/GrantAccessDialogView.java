@@ -18,7 +18,12 @@ import io.jmix.flowui.view.ViewController;
 import io.jmix.flowui.view.ViewDescriptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
+import io.jmix.reports.entity.Report;
+import org.springframework.lang.Nullable;
+import uz.kapitalbank.umida.entity.ReportAccess;
+import uz.kapitalbank.umida.entity.OrgStructureSubdivision;
 import uz.kapitalbank.umida.entity.ReportAccessRequest;
+import uz.kapitalbank.umida.entity.ReportSubdivisionAccess;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.enums.AccessLevel;
 import uz.kapitalbank.umida.service.ReportAccessService;
@@ -26,7 +31,10 @@ import uz.kapitalbank.umida.service.ReportAccessService;
 import java.time.LocalDate;
 
 /**
- * Диалог «Предоставление доступа»: владелец (или обладатель GRANT) подтверждает заявку.
+ * Диалог «Предоставление доступа». Открывается в трёх случаях: владелец (или обладатель GRANT)
+ * подтверждает заявку; распорядитель доступов выдаёт или настраивает доступ сотруднику без заявки
+ * — вкладка «Все»; распорядитель настраивает срок доступа подразделения — вкладка
+ * «Подразделения». В последнем случае галочки нет: подразделению выдаётся только запуск.
  * <p>
  * Дата начала подставляется сегодняшняя, дата окончания по умолчанию пустая — это бессрочный
  * доступ. Галочка «Разрешить предоставление доступа» выдаёт уровень GRANT — сотрудник сможет
@@ -61,10 +69,18 @@ public class GrantAccessDialogView extends StandardView {
     @ViewComponent
     private JmixCheckbox canGrantField;
 
-    private ReportAccessRequest request;
+    /**
+     * Что сделать по кнопке «Дать доступ» — зависит от того, каким сеттером диалог заполнен.
+     */
+    private interface GrantAction {
+        void grant(LocalDate validFrom, @Nullable LocalDate validTo, boolean canGrant);
+    }
+
+    private GrantAction action;
 
     public void setRequest(ReportAccessRequest request) {
-        this.request = request;
+        action = (validFrom, validTo, canGrant) ->
+                reportAccessService.grant(request, currentUser(), validFrom, validTo, canGrant);
         reportLabel.setText(messageBundle.formatMessage("reportSubject", request.getReport().getName()));
         fullNameField.setValue(ReportAccessService.displayName(request.getRequester()));
         usernameField.setValue(request.getRequester().getUsername());
@@ -74,6 +90,41 @@ public class GrantAccessDialogView extends StandardView {
         // остаётся за тем, кто выдаёт.
         canGrantField.setValue(request.getRequestedLevel() == AccessLevel.GRANT);
         canGrantField.setEnabled(true);
+    }
+
+    /**
+     * Выдача без заявки. При настройке существующего доступа поля заполняются его сроком и
+     * уровнем.
+     */
+    public void setUser(Report report, User user, @Nullable ReportAccess current) {
+        action = (validFrom, validTo, canGrant) ->
+                reportAccessService.grantDirect(report, user, currentUser(), validFrom, validTo, canGrant);
+        reportLabel.setText(messageBundle.formatMessage("reportSubject", report.getName()));
+        fullNameField.setValue(ReportAccessService.displayName(user));
+        usernameField.setValue(user.getUsername());
+        reasonField.setVisible(false);
+        validFromField.setValue(current == null || current.getValidFrom() == null
+                ? LocalDate.now() : current.getValidFrom());
+        validToField.setValue(current == null ? null : current.getValidTo());
+        canGrantField.setValue(current != null && current.getAccessLevel() == AccessLevel.GRANT);
+    }
+
+    /**
+     * Срок доступа подразделения: вместо ФИО — название подразделения, логина, причины и галочки нет.
+     */
+    public void setSubdivision(Report report, OrgStructureSubdivision subdivision,
+                               @Nullable ReportSubdivisionAccess current) {
+        action = (validFrom, validTo, canGrant) ->
+                reportAccessService.grantSubdivision(report, subdivision, currentUser(), validFrom, validTo);
+        reportLabel.setText(messageBundle.formatMessage("reportSubject", report.getName()));
+        fullNameField.setLabel(messageBundle.getMessage("grantAccessDialog.subdivision"));
+        fullNameField.setValue(subdivision.getName() == null ? subdivision.getId() : subdivision.getName());
+        usernameField.setVisible(false);
+        reasonField.setVisible(false);
+        canGrantField.setVisible(false);
+        validFromField.setValue(current == null || current.getValidFrom() == null
+                ? LocalDate.now() : current.getValidFrom());
+        validToField.setValue(current == null ? null : current.getValidTo());
     }
 
     @Subscribe("grantButton")
@@ -86,8 +137,7 @@ public class GrantAccessDialogView extends StandardView {
                     .show();
             return;
         }
-        reportAccessService.grant(request, currentUser(), validFrom, validTo,
-                Boolean.TRUE.equals(canGrantField.getValue()));
+        action.grant(validFrom, validTo, Boolean.TRUE.equals(canGrantField.getValue()));
         notifications.create(messageBundle.getMessage("accessGranted")).show();
         close(StandardOutcome.SAVE);
     }

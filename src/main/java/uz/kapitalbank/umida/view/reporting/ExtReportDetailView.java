@@ -22,7 +22,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.security.core.userdetails.UserDetails;
 import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.User;
-import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
+import uz.kapitalbank.umida.entity.OrgStructureSubdivision;
 import uz.kapitalbank.umida.service.UserReportSyncService;
 
 /**

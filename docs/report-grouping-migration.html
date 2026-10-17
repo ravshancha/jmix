@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hisobotlarni guruhlash</title>
+<style>
+:root { --bg:#f7f7f5; --card:#fff; --fg:#1d1d1b; --muted:#6b6b66; --line:#e3e2dc; --accent:#f5d90a; --code:#f1f0ea; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#161614; --card:#1f1f1c; --fg:#ececea; --muted:#a3a39c; --line:#33332f; --code:#262622; } }
+:root[data-theme="dark"] { --bg:#161614; --card:#1f1f1c; --fg:#ececea; --muted:#a3a39c; --line:#33332f; --code:#262622; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+main { max-width:960px; margin:0 auto; padding:32px 16px 64px; }
+h1 { font-size:26px; margin:0 0 4px; }
+h2 { font-size:19px; margin:36px 0 8px; padding-top:16px; border-top:1px solid var(--line); }
+h3 { font-size:15px; margin:20px 0 6px; }
+p.lead { color:var(--muted); margin-top:0; }
+.step { display:inline-block; min-width:26px; padding:0 8px; margin-right:8px; border-radius:6px; background:var(--accent); color:#1d1d1b; font-weight:700; text-align:center; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow-x:auto; font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.92em; }
+p code, li code, td code { background:var(--code); padding:1px 5px; border-radius:4px; }
+table { border-collapse:collapse; width:100%; margin:8px 0; }
+td, th { border:1px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top; }
+th { background:var(--card); }
+.note { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:8px; padding:10px 14px; margin:12px 0; }
+.wrap { overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+<h1>Hisobotlarni guruhlash: boshqa tizimga ko'chirish</h1>
+<p class="lead">«Отчеты» sahifasi (Jmix 2.8, <code>ReportingMainView</code>) uchun pagination oldidagi «Все / По группам / По доменам» tanlovi</p>
+
+<h2>Nima qilinadi</h2>
+<ul>
+<li>Toolbar o'ng tomonida, pagination oldidan <b>select</b> qo'shiladi: <i>Все</i>, <i>По группам</i>, <i>По доменам</i>. <b>Standart qiymat — «По группам»</b>: sahifa ochilganda ro'yxat darhol guruhlar bo'yicha daraxt bo'lib chiqadi.</li>
+<li><i>Все</i> tanlansa oddiy (tekis) jadval, avvalgidek ustun bo'yicha saralash va filtrlar bilan ishlaydi.</li>
+<li><i>По группам</i> yoki <i>По доменам</i> tanlansa, so'rov avval guruh/domen nomi, keyin hisobot nomi bo'yicha saralanadi. Sahifa ochiladigan sarlavhali daraxt ko'rinishida chiqadi, masalan «Тестирование (2)». Guruhi yo'q hisobotlar oxirida «Без группы» / «Без домена» ostida turadi.</li>
+<li>Pagination o'zgarmaydi: har sahifada 20 ta hisobot. Saralash bazada bo'lgani uchun bir guruh sahifalar orasida aralashib ketmaydi.</li>
+<li>Daraxtda tanlangan qator oddiy jadvalga ham tanlanadi. Shuning uchun «Выполнить», «Описание», «История исполнения», «Доступы» va kontekst menyu hech o'zgarishsiz ishlaydi.</li>
+</ul>
+
+<h2>Fayllar ro'yxati</h2>
+<div class="wrap"><table>
+<tr><th>Fayl</th><th>O'zgarish</th></tr>
+<tr><td><code>entity/ReportListRow.java</code></td><td>Yangi, bazaga saqlanmaydigan DTO (daraxt qatori)</td></tr>
+<tr><td><code>view/reporting/reporting-main-view.xml</code></td><td><code>groupedRowsDc</code>, <code>groupingField</code>, <code>groupedReportsDataGrid</code></td></tr>
+<tr><td><code>view/reporting/ReportingMainView.java</code></td><td>Enum, guruhlash logikasi, guruhlangan so'rov</td></tr>
+<tr><td><code>themes/umida-kb/view/reporting.css</code></td><td>Select joylashuvi, guruh sarlavhasi uslubi</td></tr>
+<tr><td><code>messages_ru/en/uz.properties</code></td><td>5 ta yangi kalit</td></tr>
+</table></div>
+<div class="note">Liquibase migratsiyasi <b>kerak emas</b>: <code>ReportListRow</code> faqat xotirada yashaydi (<code>@JmixEntity</code>, <code>@Entity</code>siz).</div>
+
+<h2><span class="step">1</span>DTO: <code>ReportListRow</code></h2>
+<p>Paketni o'z tizimingizga moslang. Agar entity'lar boshqa paketda bo'lsa, XML'dagi <code>class="..."</code>ni ham o'zgartiring.</p>
+<pre><code>package uz.kapitalbank.umida.entity;
+
+import io.jmix.core.metamodel.annotation.InstanceName;
+import io.jmix.core.metamodel.annotation.JmixEntity;
+import jakarta.persistence.Id;
+import org.springframework.lang.Nullable;
+
+/**
+ * Строка сгруппированного списка «Отчётности»: либо заголовок группы (группа отчётов или домен),
+ * либо отчёт внутри неё. Не сохраняется — собирается в памяти из загруженной страницы
+ * {@link UserReport}, чтобы дерево показывало отчёты под раскрывающимися заголовками.
+ */
+@JmixEntity(name = &quot;umida_ReportListRow&quot;)
+public class ReportListRow {
+
+    @Id
+    private String id;
+
+    /**
+     * Название группы у заголовка или название отчёта у строки отчёта.
+     */
+    @InstanceName
+    private String name;
+
+    /**
+     * Заголовок группы, под которым лежит отчёт; у заголовка пусто — по нему дерево раскладывает
+     * уровни.
+     */
+    private ReportListRow parent;
+
+    /**
+     * Строка «Отчётности», которую представляет строка дерева; у заголовка группы пусто.
+     */
+    private UserReport userReport;
+
+    private String code;
+
+    private String owner;
+
+    private String reportGroup;
+
+    private String domain;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Nullable
+    public ReportListRow getParent() {
+        return parent;
+    }
+
+    public void setParent(@Nullable ReportListRow parent) {
+        this.parent = parent;
+    }
+
+    @Nullable
+    public UserReport getUserReport() {
+        return userReport;
+    }
+
+    public void setUserReport(@Nullable UserReport userReport) {
+        this.userReport = userReport;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public String getReportGroup() {
+        return reportGroup;
+    }
+
+    public void setReportGroup(String reportGroup) {
+        this.reportGroup = reportGroup;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+}
+</code></pre>
+
+<h2><span class="step">2</span>View XML</h2>
+<h3>2.1 <code>&lt;data&gt;</code> ichida, <code>userReportsDc</code>dan keyin</h3>
+<pre><code>        &lt;!-- Дерево для режимов «По группам» и «По доменам»: собирается в памяти из той же страницы
+             userReportsDc, см. ReportingMainView#rebuildGroupedRows. --&gt;
+        &lt;collection id=&quot;groupedRowsDc&quot; class=&quot;uz.kapitalbank.umida.entity.ReportListRow&quot;/&gt;</code></pre>
+<h3>2.2 Toolbar: pagination'ni hbox ichiga o'rang va oldiga select qo'ying</h3>
+<p>Eski <code>&lt;simplePagination .../&gt;</code> o'rniga:</p>
+<pre><code>            &lt;hbox id=&quot;paginationPanel&quot; classNames=&quot;report-pagination-panel&quot; alignItems=&quot;CENTER&quot; padding=&quot;false&quot;&gt;
+                &lt;!-- Группировка списка: «Все» — плоский список, «По группам» и «По доменам» —
+                     дерево с раскрывающимися заголовками, отсортированное по группе. --&gt;
+                &lt;select id=&quot;groupingField&quot; classNames=&quot;report-grouping-select&quot; width=&quot;12em&quot;/&gt;
+                &lt;!-- Размер страницы фиксирован: выбор «строк на странице» пользователю не нужен. --&gt;
+                &lt;simplePagination id=&quot;pagination&quot; dataLoader=&quot;userReportsDl&quot;
+                                  itemsPerPageVisible=&quot;false&quot;
+                                  itemsPerPageDefaultValue=&quot;20&quot;
+                                  classNames=&quot;report-pagination&quot;/&gt;
+            &lt;/hbox&gt;</code></pre>
+<h3>2.3 Asosiy <code>&lt;dataGrid&gt;</code>dan keyin, daraxt jadvali</h3>
+<pre><code>        &lt;!-- Видна только при группировке; выбор строки отчёта переносится в userReportsDataGrid,
+             поэтому все команды тулбара работают как в плоском списке. --&gt;
+        &lt;treeDataGrid id=&quot;groupedReportsDataGrid&quot;
+                      width=&quot;100%&quot;
+                      minHeight=&quot;20em&quot;
+                      visible=&quot;false&quot;
+                      dataContainer=&quot;groupedRowsDc&quot;
+                      hierarchyProperty=&quot;parent&quot;
+                      classNames=&quot;report-grouped-grid&quot;&gt;
+            &lt;columns resizable=&quot;true&quot; sortable=&quot;false&quot;&gt;
+                &lt;column property=&quot;name&quot; header=&quot;msg://reportName&quot; flexGrow=&quot;2&quot;/&gt;
+                &lt;column property=&quot;code&quot; header=&quot;msg://reportCode&quot; width=&quot;12em&quot;/&gt;
+                &lt;column property=&quot;owner&quot; header=&quot;msg://owner&quot; width=&quot;16em&quot; flexGrow=&quot;0&quot;/&gt;
+                &lt;column property=&quot;reportGroup&quot; header=&quot;msg://reportGroup&quot; width=&quot;14em&quot;/&gt;
+                &lt;column property=&quot;domain&quot; header=&quot;msg://reportDomain&quot; width=&quot;10em&quot;/&gt;
+            &lt;/columns&gt;
+        &lt;/treeDataGrid&gt;</code></pre>
+<div class="note">Ustunlar ro'yxati asosiy jadval bilan bir xil bo'lishi kerak. Ustun qo'shsangiz, uni DTO'ga va <code>toReportRow</code>ga ham qo'shing.</div>
+
+<h2><span class="step">3</span>Controller (<code>ReportingMainView.java</code>)</h2>
+<h3>3.1 Importlar</h3>
+<pre><code>import io.jmix.core.entity.EntityValues;
+import io.jmix.flowui.component.grid.TreeDataGrid;
+import io.jmix.flowui.model.CollectionChangeType;
+import io.jmix.flowui.model.CollectionContainer;
+import uz.kapitalbank.umida.entity.ReportListRow;</code></pre>
+<h3>3.2 Maydonlar (<code>@ViewComponent</code>lar yoniga)</h3>
+<pre><code>    @ViewComponent
+    private JmixSelect&lt;ReportGrouping&gt; groupingField;
+    @ViewComponent
+    private CollectionContainer&lt;UserReport&gt; userReportsDc;
+    @ViewComponent
+    private CollectionContainer&lt;ReportListRow&gt; groupedRowsDc;
+    @ViewComponent
+    private TreeDataGrid&lt;ReportListRow&gt; groupedReportsDataGrid;</code></pre>
+<h3>3.3 Enum va konstanta</h3>
+<pre><code>    /**
+     * Группировка списка, выбранная рядом с пагинацией. При группировке запрос сортируется сначала
+     * по группе, а страница показывается деревом с раскрывающимися заголовками групп.
+     */
+    private enum ReportGrouping {
+        NONE(&quot;grouping.none&quot;),
+        BY_GROUP(&quot;grouping.byGroup&quot;),
+        BY_DOMAIN(&quot;grouping.byDomain&quot;);
+
+        private final String messageKey;
+
+        ReportGrouping(String messageKey) {
+            this.messageKey = messageKey;
+        }
+    }
+
+    /**
+     * Part name of a group header row in the grouped tree. See {@code reporting.css}.
+     */
+    private static final String GROUP_HEADER_PART = &quot;report-group-header&quot;;</code></pre>
+<h3>3.4 <code>onInit</code> ichida chaqiruv</h3>
+<pre><code>        initScopeFilter();
+
+        initGrouping();</code></pre>
+<h3>3.5 Guruhlash logikasi</h3>
+<p><code>MetadataTools</code>, <code>DataManager</code> va <code>MessageBundle</code> view'da allaqachon inject qilingan bo'lishi kerak.</p>
+<pre><code>    /**
+     * Выбор строки дерева переносится в плоский грид: все команды тулбара и контекстного меню —
+     * его действия и берут отчёт из его выделения. Заголовок группы выделение снимает.
+     */
+    private void initGrouping() {
+        groupingField.setItems(ReportGrouping.values());
+        groupingField.setItemLabelGenerator(item -&gt; messageBundle.getMessage(item.messageKey));
+        groupingField.setEmptySelectionAllowed(false);
+        // По умолчанию список сгруппирован по группам отчётов; «Все» — плоский список.
+        groupingField.setValue(ReportGrouping.BY_GROUP);
+        applyGroupingMode();
+        groupingField.addValueChangeListener(e -&gt; {
+            applyGroupingMode();
+            reloadReports();
+        });
+
+        groupedReportsDataGrid.setPartNameGenerator(row -&gt;
+                row.getUserReport() == null ? GROUP_HEADER_PART : null);
+        groupedReportsDataGrid.addSelectionListener(e -&gt; {
+            ReportListRow row = groupedReportsDataGrid.getSingleSelectedItem();
+            if (row != null &amp;&amp; row.getUserReport() != null) {
+                userReportsDataGrid.select(row.getUserReport());
+            } else {
+                userReportsDataGrid.deselectAll();
+            }
+        });
+    }
+
+    private void applyGroupingMode() {
+        boolean grouped = isGrouped();
+        userReportsDataGrid.deselectAll();
+        groupedReportsDataGrid.deselectAll();
+        userReportsDataGrid.setVisible(!grouped);
+        groupedReportsDataGrid.setVisible(grouped);
+    }
+
+    private boolean isGrouped() {
+        ReportGrouping grouping = groupingField.getValue();
+        return grouping != null &amp;&amp; grouping != ReportGrouping.NONE;
+    }
+
+    /**
+     * Перестраивает дерево после каждой загрузки страницы. Запрос уже отсортирован по группе,
+     * поэтому заголовки идут в том же порядке, а отчёты внутри группы сохраняют порядок запроса.
+     */
+    @Subscribe(id = &quot;userReportsDc&quot;, target = Target.DATA_CONTAINER)
+    public void onUserReportsDcCollectionChange(CollectionContainer.CollectionChangeEvent&lt;UserReport&gt; event) {
+        if (event.getChangeType() == CollectionChangeType.REFRESH) {
+            rebuildGroupedRows();
+        }
+    }
+
+    private void rebuildGroupedRows() {
+        if (!isGrouped()) {
+            groupedRowsDc.setItems(List.of());
+            return;
+        }
+        ReportGrouping grouping = groupingField.getValue();
+
+        Map&lt;String, ReportListRow&gt; headers = new LinkedHashMap&lt;&gt;();
+        Map&lt;ReportListRow, Integer&gt; counts = new HashMap&lt;&gt;();
+        List&lt;ReportListRow&gt; reportRows = new ArrayList&lt;&gt;();
+        for (UserReport userReport : userReportsDc.getItems()) {
+            Object groupKey = grouping == ReportGrouping.BY_GROUP
+                    ? userReport.getReport().getGroup()
+                    : userReport.getDomain();
+            String headerId = groupKey == null ? &quot;none&quot; : String.valueOf(EntityValues.getId(groupKey));
+            ReportListRow header = headers.computeIfAbsent(headerId, id -&gt; {
+                ReportListRow row = dataManager.create(ReportListRow.class);
+                row.setId(&quot;group:&quot; + id);
+                row.setName(groupKey == null
+                        ? messageBundle.getMessage(grouping == ReportGrouping.BY_GROUP
+                                ? &quot;grouping.noGroup&quot; : &quot;grouping.noDomain&quot;)
+                        : metadataTools.getInstanceName(groupKey));
+                return row;
+            });
+            counts.merge(header, 1, Integer::sum);
+            reportRows.add(toReportRow(userReport, header));
+        }
+        headers.values().forEach(header -&gt;
+                header.setName(header.getName() + &quot; (&quot; + counts.get(header) + &quot;)&quot;));
+
+        List&lt;ReportListRow&gt; rows = new ArrayList&lt;&gt;(headers.values());
+        rows.addAll(reportRows);
+        groupedRowsDc.setItems(rows);
+        groupedReportsDataGrid.expand(headers.values());
+    }
+
+    private ReportListRow toReportRow(UserReport userReport, ReportListRow header) {
+        Report report = userReport.getReport();
+        ReportListRow row = dataManager.create(ReportListRow.class);
+        row.setId(&quot;report:&quot; + userReport.getId());
+        row.setParent(header);
+        row.setUserReport(userReport);
+        row.setName(report.getName());
+        row.setCode(report.getCode());
+        row.setOwner(userReport.getSubdivision() == null
+                ? null : metadataTools.getInstanceName(userReport.getSubdivision()));
+        row.setReportGroup(report.getGroup() == null ? null : metadataTools.getInstanceName(report.getGroup()));
+        row.setDomain(userReport.getDomain() == null ? null : userReport.getDomain().getInstanceName());
+        return row;
+    }</code></pre>
+<h3>3.6 Load delegate: guruhlangan so'rov</h3>
+<p><code>@Install(to = "userReportsDl", target = Target.DATA_LOADER)</code> metodida, <code>buildFilterQuery()</code>dan keyin va oddiy <code>Sort</code>dan <b>oldin</b>:</p>
+<pre><code>        if (isGrouped()) {
+            // Сортировка по группе задаётся в самом запросе: левые соединения оставляют в списке
+            // отчёты без группы или домена (они идут последними), а сортировка колонок в дереве
+            // отключена. Так одна группа не разбрасывается по разным страницам.
+            String query = groupingField.getValue() == ReportGrouping.BY_GROUP
+                    ? &quot;select e from UserReport e left join e.report r left join r.group g&quot;
+                    + filterQuery.where() + &quot; order by g.title, r.name&quot;
+                    : &quot;select e from UserReport e left join e.report r left join e.domain d&quot;
+                    + filterQuery.where() + &quot; order by d.shortName, d.code, r.name&quot;;
+            return dataManager.load(UserReport.class)
+                    .query(query)
+                    .condition(headerFilterCondition(loadContext.getQuery()))
+                    .parameters(filterQuery.parameters())
+                    .fetchPlan(loadContext.getFetchPlan())
+                    .firstResult(loadContext.getQuery().getFirstResult())
+                    .maxResults(loadContext.getQuery().getMaxResults())
+                    .list();
+        }</code></pre>
+<div class="note">Bu yerda <code>.sort(...)</code> ishlatilmaydi. Tartib so'rovning o'zidagi <code>order by</code> bilan beriladi, chunki <code>left join</code> guruhi/domeni yo'q hisobotlarni ham ro'yxatda qoldiradi. Filtr shartlari (<code>e.report...</code>, <code>e.domain</code>) <code>e</code> aliasiga bog'langan, shuning uchun qo'shimcha join'lar ularni buzmaydi. Sanash (<code>totalCountDelegate</code>) o'zgarmaydi.</div>
+
+<p><b>Eslatma:</b> <code>setValue(BY_GROUP)</code> listener qo'shilishidan oldin chaqiriladi, shuning uchun listener ishlamaydi. Daraxtni boshidanoq ko'rsatish uchun <code>applyGroupingMode()</code> alohida chaqiriladi; birinchi yuklash esa <code>isGrouped()</code> orqali allaqachon guruh bo'yicha saralangan so'rovni ishlatadi.</p>
+
+<h2><span class="step">4</span>CSS</h2>
+<p>Toolbar uslublari bor faylga (<code>reporting.css</code>), <code>/* ---- Grid ---- */</code> bo'limi atrofiga:</p>
+<pre><code>/* Выбор группировки стоит перед пагинацией с тем же зазором, что и между кнопками. */
+.report-pagination-panel {
+  flex-shrink: 0;
+  gap: var(--lumo-space-s);
+}
+
+.report-grouping-select {
+  padding-block: 0;
+}</code></pre>
+<pre><code>.report-grouped-grid {
+  border: 1px solid var(--lumo-contrast-10pct);
+  border-radius: var(--lumo-border-radius-l);
+}
+
+/* Заголовок группы в дереве читается как раздел, а не как отчёт. */
+.report-grouped-grid::part(report-group-header) {
+  font-weight: 600;
+  background-color: var(--lumo-contrast-5pct);
+}</code></pre>
+
+<h2><span class="step">5</span>Tarjimalar</h2>
+<h3>messages_ru.properties</h3><pre><code>uz.kapitalbank.umida.view.reporting/grouping.none=Все
+uz.kapitalbank.umida.view.reporting/grouping.byGroup=По группам
+uz.kapitalbank.umida.view.reporting/grouping.byDomain=По доменам
+uz.kapitalbank.umida.view.reporting/grouping.noGroup=Без группы
+uz.kapitalbank.umida.view.reporting/grouping.noDomain=Без домена</code></pre>
+<h3>messages_en.properties</h3><pre><code>uz.kapitalbank.umida.view.reporting/grouping.none=All
+uz.kapitalbank.umida.view.reporting/grouping.byGroup=By groups
+uz.kapitalbank.umida.view.reporting/grouping.byDomain=By domains
+uz.kapitalbank.umida.view.reporting/grouping.noGroup=No group
+uz.kapitalbank.umida.view.reporting/grouping.noDomain=No domain</code></pre>
+<h3>messages_uz.properties</h3><pre><code>uz.kapitalbank.umida.view.reporting/grouping.none=Hammasi
+uz.kapitalbank.umida.view.reporting/grouping.byGroup=Guruhlar bo&#x27;yicha
+uz.kapitalbank.umida.view.reporting/grouping.byDomain=Domenlar bo&#x27;yicha
+uz.kapitalbank.umida.view.reporting/grouping.noGroup=Guruhsiz
+uz.kapitalbank.umida.view.reporting/grouping.noDomain=Domensiz</code></pre>
+<p>Kalit prefiksi (<code>uz.kapitalbank.umida.view.reporting/</code>) view paketiga teng bo'lishi kerak. Paket boshqa bo'lsa, prefiksni almashtiring.</p>
+
+<h2><span class="step">6</span>Boshqa tizimga moslash</h2>
+<ul>
+<li><b>Entity nomlari boshqacha bo'lsa</b>: so'rovdagi <code>UserReport</code>, <code>e.report</code>, <code>r.group</code>, <code>e.domain</code>, <code>g.title</code>, <code>d.shortName</code> va <code>rebuildGroupedRows</code>dagi <code>getGroup()</code> / <code>getDomain()</code> chaqiruvlarini moslang.</li>
+<li><b>Yangi guruhlash turi qo'shish</b> (masalan, «По владельцу»): enum'ga qiymat qo'shing, so'rovga <code>left join</code> + <code>order by</code> qo'shing va <code>groupKey</code> tanlovini kengaytiring. Bitta tarjima kaliti yetarli.</li>
+<li><b>Jmix bo'lmagan tizim</b> (masalan, React + REST): g'oya o'zgarmaydi. Backend sahifani <code>ORDER BY group_name NULLS LAST, name</code> bilan qaytaradi. Frontend sahifa ichida qatorlarni guruh bo'yicha bo'ladi va sarlavha qatorlarini qo'shadi. Jami son (total count) faqat hisobotlarni sanaydi.</li>
+<li><b>Guruhlar standart yopiq bo'lsin desangiz</b>: <code>groupedReportsDataGrid.expand(...)</code> qatorini olib tashlang.</li>
+</ul>
+
+<h2><span class="step">7</span>Tekshirish</h2>
+<ol>
+<li><code>./gradlew compileJava</code></li>
+<li>«Отчеты» sahifasini oching. Pagination oldida select borligini, standart qiymat «По группам» ekanini va ro'yxat darhol daraxt bo'lib chiqishini tekshiring.</li>
+<li>Daraxtda sarlavhalar soni bilan chiqadi, guruhlar alifbo tartibida, guruhsizlar oxirida.</li>
+<li>Hisobot qatorini tanlab «Выполнить» / «Описание» / «Доступы»ni bosing: tanlangan hisobot uchun ishlashi kerak. Sarlavha tanlansa, tugmalar tanlov yo'qligini bildiradi.</li>
+<li>Filtrlar (nom, kod, domen) va sahifalash guruhlangan rejimda ham ishlashini tekshiring.</li>
+<li>«По доменам»ni tanlang: hisobotlar domen sarlavhalari ostida chiqadi.</li>
+<li>«Все»ni tanlang: oddiy jadval va ustun bo'yicha saralash qaytadi.</li>
+</ol>
+</main>
+</body>
+</html>

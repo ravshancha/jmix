@@ -3,7 +3,7 @@
       title="msg://orgStructureSubdivisionListView.title"
       focusComponent="nameFilterField">
     <data>
-        <collection id="subdivisionsDc" class="uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision">
+        <collection id="subdivisionsDc" class="uz.kapitalbank.umida.entity.OrgStructureSubdivision">
             <fetchPlan extends="_base">
                 <property name="parent" fetchPlan="_instance_name"/>
             </fetchPlan>

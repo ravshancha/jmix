@@ -11,7 +11,7 @@ import io.jmix.flowui.view.ViewComponent;
 import io.jmix.flowui.view.ViewController;
 import io.jmix.flowui.view.ViewDescriptor;
 import org.springframework.lang.Nullable;
-import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
+import uz.kapitalbank.umida.entity.OrgStructureSubdivision;
 import uz.kapitalbank.umida.view.main.MainView;
 
 /**

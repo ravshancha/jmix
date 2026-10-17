@@ -1,4 +1,4 @@
-package uz.kapitalbank.umida.entity.orgstructure;
+package uz.kapitalbank.umida.entity;
 
 import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;

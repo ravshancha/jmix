@@ -14,6 +14,9 @@
             </fetchPlan>
             <loader id="userReportsDl"/>
         </collection>
+        <!-- Дерево для режимов «По группам» и «По доменам»: собирается в памяти из той же страницы
+             userReportsDc, см. ReportingMainView#rebuildGroupedRows. -->
+        <collection id="groupedRowsDc" class="uz.kapitalbank.umida.entity.ReportListRow"/>
     </data>
 
     <facets>
@@ -108,11 +111,16 @@
                     </items>
                 </dropdownButton>
             </hbox>
-            <!-- Размер страницы фиксирован: выбор «строк на странице» пользователю не нужен. -->
-            <simplePagination id="pagination" dataLoader="userReportsDl"
-                              itemsPerPageVisible="false"
-                              itemsPerPageDefaultValue="20"
-                              classNames="report-pagination"/>
+            <hbox id="paginationPanel" classNames="report-pagination-panel" alignItems="CENTER" padding="false">
+                <!-- Группировка списка: «Все» — плоский список, «По группам» и «По доменам» —
+                     дерево с раскрывающимися заголовками, отсортированное по группе. -->
+                <select id="groupingField" classNames="report-grouping-select" width="12em"/>
+                <!-- Размер страницы фиксирован: выбор «строк на странице» пользователю не нужен. -->
+                <simplePagination id="pagination" dataLoader="userReportsDl"
+                                  itemsPerPageVisible="false"
+                                  itemsPerPageDefaultValue="20"
+                                  classNames="report-pagination"/>
+            </hbox>
         </hbox>
 
         <dataGrid id="userReportsDataGrid"
@@ -143,5 +151,23 @@
                 <column property="domain" header="msg://reportDomain" width="10em"/>
             </columns>
         </dataGrid>
+
+        <!-- Видна только при группировке; выбор строки отчёта переносится в userReportsDataGrid,
+             поэтому все команды тулбара работают как в плоском списке. -->
+        <treeDataGrid id="groupedReportsDataGrid"
+                      width="100%"
+                      minHeight="20em"
+                      visible="false"
+                      dataContainer="groupedRowsDc"
+                      hierarchyProperty="parent"
+                      classNames="report-grouped-grid">
+            <columns resizable="true" sortable="false">
+                <column property="name" header="msg://reportName" flexGrow="2"/>
+                <column property="code" header="msg://reportCode" width="12em"/>
+                <column property="owner" header="msg://owner" width="16em" flexGrow="0"/>
+                <column property="reportGroup" header="msg://reportGroup" width="14em"/>
+                <column property="domain" header="msg://reportDomain" width="10em"/>
+            </columns>
+        </treeDataGrid>
     </layout>
 </view>

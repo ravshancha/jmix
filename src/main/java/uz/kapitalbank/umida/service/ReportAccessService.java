@@ -22,8 +22,12 @@ import uz.kapitalbank.umida.entity.ReportAccess;
 import uz.kapitalbank.umida.entity.ReportAccessEvent;
 import uz.kapitalbank.umida.entity.ReportAccessRequest;
 import uz.kapitalbank.umida.entity.ReportAccessRow;
+import uz.kapitalbank.umida.entity.ReportDomain;
+import uz.kapitalbank.umida.entity.ReportSubdivisionAccess;
+import uz.kapitalbank.umida.entity.ReportSubdivisionRow;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.entity.UserReport;
+import uz.kapitalbank.umida.entity.OrgStructureSubdivision;
 import uz.kapitalbank.umida.enums.AccessEventType;
 import uz.kapitalbank.umida.enums.AccessLevel;
 import uz.kapitalbank.umida.enums.GrantorStatus;
@@ -32,20 +36,34 @@ import uz.kapitalbank.umida.enums.RequestStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Ролевая модель доступа к отчётам: NONE (строки нет) → READ (запуск) → GRANT (запуск плюс право
  * выдавать доступ другим по этому отчёту). Владелец отчёта — {@code UserReport.owner}, он всё
- * может по определению.
+ * может по определению; наравне с ним распоряжаются доступами сотрудники подразделений-владельцев —
+ * отчёта ({@code UserReport.subdivision}) и его области ({@code ReportDomain.subdivision}) — и
+ * вложенных в них подразделений.
+ * <p>
+ * Кроме личных доступов есть доступ подразделения ({@link ReportSubdivisionAccess}): отчёт
+ * запускают все сотрудники выбранного подразделения и вложенных в него. Принадлежность берётся из
+ * оргструктуры — идентификаторов уровней у {@link OrgStructureEmployee} и иерархии
+ * {@link OrgStructureSubdivision}.
  * <p>
  * Заявки решают владелец и адресат заявки, а данные при этом пишутся от имени системного
  * пользователя: у обычного сотрудника нет прав на чужие строки доступа, но именно он нажимает
@@ -136,15 +154,7 @@ public class ReportAccessService {
                 access.setReport(report);
                 access.setUser(subject);
             }
-            access.setAccessLevel(canGrant ? AccessLevel.GRANT : AccessLevel.READ);
-            access.setValidFrom(validFrom);
-            access.setValidTo(validTo);
-            access.setActive(true);
-            access.setGrantedBy(decidedBy);
-            access.setGrantedAt(LocalDateTime.now());
-            access.setRevokedBy(null);
-            access.setRevokedAt(null);
-            access.setRevokeReason(null);
+            fillAccess(access, decidedBy, validFrom, validTo, canGrant);
 
             managed.setStatus(RequestStatus.SUCCESS);
             managed.setDecidedBy(decidedBy);
@@ -184,6 +194,134 @@ public class ReportAccessService {
             dataManager.save(saveContext);
             return null;
         });
+    }
+
+    /**
+     * Выдача (или настройка) доступа без заявки — владелец отчёта, сотрудник подразделения-владельца или
+     * администратор выбирает сотрудника на вкладке «Все». Если у сотрудника висит заявка, она
+     * закрывается этим решением, как при одобрении со вкладки «Запросы».
+     */
+    public void grantDirect(Report report, User subject, User decidedBy,
+                            LocalDate validFrom, @Nullable LocalDate validTo, boolean canGrant) {
+        requireManager(decidedBy, report);
+        List<ReportAccessRequest> pending = systemAuthenticator.withSystem(() -> pendingRequestsOf(subject, report));
+        if (!pending.isEmpty()) {
+            grant(pending.get(0), decidedBy, validFrom, validTo, canGrant);
+            return;
+        }
+        systemAuthenticator.withSystem(() -> {
+            ReportAccess access = activeAccess(subject, report);
+            boolean update = access != null;
+            if (!update) {
+                access = dataManager.create(ReportAccess.class);
+                access.setReport(report);
+                access.setUser(subject);
+            }
+            fillAccess(access, decidedBy, validFrom, validTo, canGrant);
+
+            ReportAccessEvent event = newEvent(report,
+                    update ? AccessEventType.ACCESS_CHANGED : AccessEventType.ACCESS_GRANTED,
+                    subject, decidedBy);
+            event.setValidFrom(validFrom);
+            event.setValidTo(validTo);
+
+            dataManager.save(new SaveContext().saving(access, event));
+            return null;
+        });
+    }
+
+    private void fillAccess(ReportAccess access, User decidedBy,
+                            LocalDate validFrom, @Nullable LocalDate validTo, boolean canGrant) {
+        access.setAccessLevel(canGrant ? AccessLevel.GRANT : AccessLevel.READ);
+        access.setValidFrom(validFrom);
+        access.setValidTo(validTo);
+        access.setActive(true);
+        access.setGrantedBy(decidedBy);
+        access.setGrantedAt(LocalDateTime.now());
+        access.setRevokedBy(null);
+        access.setRevokedAt(null);
+        access.setRevokeReason(null);
+    }
+
+    /**
+     * Выдача (или продление) доступа подразделению целиком. Уровень всегда READ — см.
+     * {@link ReportSubdivisionAccess}.
+     */
+    public void grantSubdivision(Report report, OrgStructureSubdivision subdivision, User decidedBy,
+                                 LocalDate validFrom, @Nullable LocalDate validTo) {
+        requireManager(decidedBy, report);
+        systemAuthenticator.withSystem(() -> {
+            ReportSubdivisionAccess access = dataManager.load(ReportSubdivisionAccess.class)
+                    .query("select e from ReportSubdivisionAccess e where e.report = :report"
+                            + " and e.subdivision.id = :subdivisionId and e.active = true")
+                    .parameter("report", report)
+                    .parameter("subdivisionId", subdivision.getId())
+                    .maxResults(1)
+                    .list()
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+            boolean update = access != null;
+            if (!update) {
+                access = dataManager.create(ReportSubdivisionAccess.class);
+                access.setReport(report);
+                access.setSubdivision(subdivision);
+            }
+            access.setValidFrom(validFrom);
+            access.setValidTo(validTo);
+            access.setActive(true);
+            access.setGrantedBy(decidedBy);
+            access.setGrantedAt(LocalDateTime.now());
+
+            ReportAccessEvent event = newEvent(report,
+                    update ? AccessEventType.ACCESS_CHANGED : AccessEventType.ACCESS_GRANTED,
+                    null, decidedBy);
+            event.setSubdivision(subdivision);
+            event.setValidFrom(validFrom);
+            event.setValidTo(validTo);
+
+            dataManager.save(new SaveContext().saving(access, event));
+            return null;
+        });
+    }
+
+    /**
+     * Закрытие доступа подразделения: строка остаётся ради истории, сотрудники подразделения
+     * теряют право запуска, если личного доступа у них нет.
+     */
+    public void revokeSubdivision(ReportSubdivisionAccess access, User revokedBy, @Nullable String reason) {
+        requireManager(revokedBy, access.getReport());
+        systemAuthenticator.withSystem(() -> {
+            ReportSubdivisionAccess managed = dataManager.load(ReportSubdivisionAccess.class)
+                    .id(access.getId())
+                    .fetchPlan(fp -> fp.addFetchPlan("_base").add("report").add("subdivision"))
+                    .one();
+            managed.setActive(false);
+            managed.setRevokedBy(revokedBy);
+            managed.setRevokedAt(LocalDateTime.now());
+            managed.setRevokeReason(reason);
+
+            ReportAccessEvent event = newEvent(managed.getReport(), AccessEventType.ACCESS_REVOKED,
+                    null, revokedBy);
+            event.setSubdivision(managed.getSubdivision());
+            event.setRejectionReason(reason);
+            event.setValidFrom(managed.getValidFrom());
+            event.setValidTo(managed.getValidTo());
+
+            dataManager.save(new SaveContext().saving(managed, event));
+            return null;
+        });
+    }
+
+    /**
+     * Прямая выдача и доступы подразделений минуют заявки, поэтому право проверяет сам сервис, а
+     * не только экран.
+     */
+    private void requireManager(User user, Report report) {
+        if (!canManage(user, report)) {
+            throw new IllegalStateException("User " + user.getUsername()
+                    + " is not allowed to manage access to report " + report.getId());
+        }
     }
 
     /**
@@ -282,19 +420,24 @@ public class ReportAccessService {
         if (isAdministrator(user) || isOwner(user, report)) {
             return AccessLevel.OWNER;
         }
-        ReportAccess access = activeAccess(user, report);
-        if (access == null || !withinPeriod(access)) {
-            return AccessLevel.NONE;
+        if (isOwnerSubdivisionMember(user, report)) {
+            return AccessLevel.SUBDIVISION_OWNER;
         }
-        return access.getAccessLevel();
+        ReportAccess access = activeAccess(user, report);
+        if (access != null && withinPeriod(access)) {
+            return access.getAccessLevel();
+        }
+        // Личного доступа нет — отчёт всё равно запускается, если он выдан подразделению.
+        return coveredBySubdivision(user, report) ? AccessLevel.READ : AccessLevel.NONE;
     }
 
     /**
-     * Может ли сотрудник решать заявки по отчёту: владелец, администратор или обладатель GRANT.
+     * Может ли сотрудник решать заявки по отчёту: владелец, подразделение-владелец, администратор
+     * или обладатель GRANT.
      */
     public boolean canDecide(User user, Report report) {
         AccessLevel level = level(user, report);
-        return level == AccessLevel.OWNER || level == AccessLevel.GRANT;
+        return level == AccessLevel.OWNER || level == AccessLevel.SUBDIVISION_OWNER || level == AccessLevel.GRANT;
     }
 
     public boolean isOwner(User user, Report report) {
@@ -308,11 +451,12 @@ public class ReportAccessService {
     }
 
     /**
-     * Кто распоряжается выданными доступами по отчёту — закрывает их и правит: владелец и
-     * администратор. Делегат с уровнем GRANT доступ выдаёт, но не отзывает.
+     * Кто распоряжается доступами по отчёту — выдаёт без заявки, правит и закрывает, в том числе
+     * подразделениям: владелец, сотрудники подразделения-владельца и администратор. Делегат с уровнем GRANT
+     * доступ выдаёт только по заявке и не отзывает.
      */
     public boolean canManage(User user, Report report) {
-        return isAdministrator(user) || isOwner(user, report);
+        return isAdministrator(user) || isOwner(user, report) || isOwnerSubdivisionMember(user, report);
     }
 
     /**
@@ -372,6 +516,325 @@ public class ReportAccessService {
                 .map(UserReport::getOwner)
                 .findFirst()
                 .orElse(null));
+    }
+
+    /**
+     * Подразделения-владельцы отчёта: его собственное ({@code UserReport.subdivision}) и
+     * подразделения-владельцы его области и вышестоящих областей ({@code ReportDomain.subdivision}).
+     * Связи независимы — заполнена может быть любая из них или обе.
+     */
+    private Set<String> ownerSubdivisionIds(Report report) {
+        return systemAuthenticator.withSystem(() -> {
+            Set<String> result = new LinkedHashSet<>();
+            UserReport userReport = dataManager.load(UserReport.class)
+                    .query("select e from UserReport e where e.report = :report")
+                    .parameter("report", report)
+                    .fetchPlan(fp -> fp.addFetchPlan("_base")
+                            .add("subdivision", d -> d.addFetchPlan("_base"))
+                            .add("domain", d -> d.addFetchPlan("_base")))
+                    .maxResults(1)
+                    .list()
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+            if (userReport == null) {
+                return result;
+            }
+            if (userReport.getSubdivision() != null) {
+                result.add(userReport.getSubdivision().getId());
+            }
+            ReportDomain domain = userReport.getDomain();
+            Set<UUID> seen = new HashSet<>();
+            while (domain != null && seen.add(domain.getId())) {
+                ReportDomain loaded = dataManager.load(ReportDomain.class)
+                        .id(domain.getId())
+                        .fetchPlan(fp -> fp.addFetchPlan("_base")
+                                .add("parent", p -> p.addFetchPlan("_base"))
+                                .add("subdivision", d -> d.addFetchPlan("_base")))
+                        .one();
+                if (loaded.getSubdivision() != null) {
+                    result.add(loaded.getSubdivision().getId());
+                }
+                domain = loaded.getParent();
+            }
+            return result;
+        });
+    }
+
+    /**
+     * Сотрудники подразделений-владельцев и вложенных в них подразделений — те из них, у кого
+     * есть вход в приложение.
+     */
+    private List<User> ownerSubdivisionMembers(Report report) {
+        Set<String> owners = ownerSubdivisionIds(report);
+        if (owners.isEmpty()) {
+            return List.of();
+        }
+        return systemAuthenticator.withSystem(() -> {
+            Set<String> ids = withDescendants(owners, subdivisionChildren());
+            Map<UUID, User> result = new LinkedHashMap<>();
+            dataManager.load(OrgStructureEmployee.class)
+                    .query("select e from OrgStructureEmployee e where e.user is not null")
+                    .fetchPlan(fp -> fp.addFetchPlan("_base").add("user", u -> u.addFetchPlan("_base")))
+                    .list()
+                    .stream()
+                    .filter(employee -> levelIds(employee).stream().anyMatch(ids::contains))
+                    .map(OrgStructureEmployee::getUser)
+                    .sorted(Comparator.comparing(ReportAccessService::displayName, String.CASE_INSENSITIVE_ORDER))
+                    .forEach(user -> result.putIfAbsent(user.getId(), user));
+            return new ArrayList<>(result.values());
+        });
+    }
+
+    /**
+     * Сотрудник ли подразделения-владельца отчёта или его области (самого подразделения либо
+     * вложенного в него).
+     */
+    public boolean isOwnerSubdivisionMember(User user, Report report) {
+        Set<String> owners = ownerSubdivisionIds(report);
+        if (owners.isEmpty()) {
+            return false;
+        }
+        Set<String> own = systemAuthenticator.withSystem(() -> subdivisionsOf(user));
+        return owners.stream().anyMatch(own::contains);
+    }
+
+    /**
+     * Отчёты, где подразделение сотрудника (или вышестоящее) — владелец самого отчёта либо его
+     * области; область берётся вместе со всеми поддоменами.
+     */
+    private Set<UUID> subdivisionOwnedReportIds(User user) {
+        Set<String> subdivisions = subdivisionsOf(user);
+        if (subdivisions.isEmpty()) {
+            return Set.of();
+        }
+        Set<UUID> domains = dataManager.loadValues("select d.id from umida_ReportDomain d"
+                        + " where d.subdivision.id in :subdivisions")
+                .parameter("subdivisions", subdivisions)
+                .properties("id")
+                .list()
+                .stream()
+                .map(kv -> (UUID) kv.getValue("id"))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (!domains.isEmpty()) {
+            Map<UUID, List<UUID>> children = new HashMap<>();
+            dataManager.loadValues("select e.id, p.id from umida_ReportDomain e join e.parent p")
+                    .properties("id", "parentId")
+                    .list()
+                    .forEach(kv -> children.computeIfAbsent(kv.getValue("parentId"), k -> new ArrayList<>())
+                            .add(kv.getValue("id")));
+            domains = withDescendants(domains, children);
+        }
+        Set<UUID> result = dataManager.load(UserReport.class)
+                .query("select e from UserReport e where e.subdivision.id in :subdivisions")
+                .parameter("subdivisions", subdivisions)
+                .list()
+                .stream()
+                .map(userReport -> userReport.getReport().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (!domains.isEmpty()) {
+            dataManager.load(UserReport.class)
+                    .query("select e from UserReport e where e.domain.id in :domains")
+                    .parameter("domains", domains)
+                    .list()
+                    .forEach(userReport -> result.add(userReport.getReport().getId()));
+        }
+        return result;
+    }
+
+    /**
+     * Дочерние подразделения по родителю — весь справочник одним запросом.
+     */
+    private Map<String, List<String>> subdivisionChildren() {
+        Map<String, List<String>> children = new HashMap<>();
+        dataManager.loadValues("select s.id, p.id from umida_OrgStructureSubdivision s join s.parent p")
+                .properties("id", "parentId")
+                .list()
+                .forEach(kv -> children.computeIfAbsent(kv.getValue("parentId"), k -> new ArrayList<>())
+                        .add(kv.getValue("id")));
+        return children;
+    }
+
+    private static <K> Set<K> withDescendants(Collection<K> roots, Map<K, List<K>> children) {
+        Set<K> result = new LinkedHashSet<>(roots);
+        Deque<K> queue = new ArrayDeque<>(roots);
+        while (!queue.isEmpty()) {
+            for (K child : children.getOrDefault(queue.poll(), List.of())) {
+                if (result.add(child)) {
+                    queue.add(child);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Дерево вкладки «Подразделения»: весь справочник подразделений, у каждого — собственный
+     * доступ к отчёту, если он выдан, либо вышестоящее подразделение, через которое доступ уже
+     * есть. Справочник читается одним запросом, дерево собирается в памяти.
+     */
+    public List<ReportSubdivisionRow> subdivisionRows(Report report) {
+        return systemAuthenticator.withSystem(() -> {
+            Map<String, ReportSubdivisionAccess> accessBySubdivision = new HashMap<>();
+            subdivisionAccesses(report).forEach(access ->
+                    accessBySubdivision.putIfAbsent(access.getSubdivision().getId(), access));
+
+            Map<String, ReportSubdivisionRow> rows = new LinkedHashMap<>();
+            Map<String, String> parentIds = new HashMap<>();
+            dataManager.loadValues("select s.id, s.name, p.id from umida_OrgStructureSubdivision s"
+                            + " left join s.parent p order by s.name")
+                    .properties("id", "name", "parentId")
+                    .list()
+                    .forEach(kv -> {
+                        String id = kv.getValue("id");
+                        String name = kv.getValue("name");
+                        ReportSubdivisionRow row = dataManager.create(ReportSubdivisionRow.class);
+                        row.setId(id);
+                        row.setName(name == null ? id : name);
+                        ReportSubdivisionAccess access = accessBySubdivision.get(id);
+                        if (access != null) {
+                            row.setAccessId(access.getId());
+                            row.setValidFrom(access.getValidFrom());
+                            row.setValidTo(access.getValidTo());
+                            row.setGrantedBy(access.getGrantedBy() == null ? null : displayName(access.getGrantedBy()));
+                            row.setGrantedAt(access.getGrantedAt());
+                        }
+                        rows.put(id, row);
+                        parentIds.put(id, kv.getValue("parentId"));
+                    });
+            rows.forEach((id, row) -> row.setParent(rows.get(parentIds.get(id))));
+            for (ReportSubdivisionRow row : rows.values()) {
+                Set<String> seen = new HashSet<>();
+                for (ReportSubdivisionRow up = row.getParent(); up != null && seen.add(up.getId()); up = up.getParent()) {
+                    ReportSubdivisionAccess access = accessBySubdivision.get(up.getId());
+                    if (access != null && withinPeriod(access.getValidFrom(), access.getValidTo())) {
+                        row.setInheritedFrom(up.getName());
+                        break;
+                    }
+                }
+            }
+            return new ArrayList<>(rows.values());
+        });
+    }
+
+    /**
+     * Строка доступа подразделения — для «Настроить» и «Закрыть» на вкладке «Подразделения».
+     */
+    public ReportSubdivisionAccess subdivisionAccess(UUID accessId) {
+        return systemAuthenticator.withSystem(() -> dataManager.load(ReportSubdivisionAccess.class)
+                .id(accessId)
+                .fetchPlan(fp -> fp.addFetchPlan("_base")
+                        .add("report", r -> r.addFetchPlan("_base"))
+                        .add("subdivision", d -> d.addFetchPlan("_base")))
+                .one());
+    }
+
+    /**
+     * Действующие доступы подразделений по отчёту.
+     */
+    public List<ReportSubdivisionAccess> subdivisionAccesses(Report report) {
+        return systemAuthenticator.withSystem(() -> dataManager.load(ReportSubdivisionAccess.class)
+                .query("select e from ReportSubdivisionAccess e where e.report = :report and e.active = true"
+                        + " order by e.grantedAt desc")
+                .parameter("report", report)
+                .fetchPlan(fp -> fp.addFetchPlan("_base")
+                        .add("subdivision", s -> s.addFetchPlan("_base"))
+                        .add("grantedBy", u -> u.addFetchPlan("_base")))
+                .list());
+    }
+
+    /**
+     * Есть ли у сотрудника доступ через подразделение: отчёт выдан его подразделению либо
+     * вышестоящему.
+     */
+    private boolean coveredBySubdivision(User user, Report report) {
+        List<ReportSubdivisionAccess> granted = subdivisionAccesses(report).stream()
+                .filter(access -> withinPeriod(access.getValidFrom(), access.getValidTo()))
+                .toList();
+        if (granted.isEmpty()) {
+            return false;
+        }
+        Set<String> own = systemAuthenticator.withSystem(() -> subdivisionsOf(user));
+        return granted.stream().anyMatch(access -> own.contains(access.getSubdivision().getId()));
+    }
+
+    /**
+     * Подразделения сотрудника вместе со всеми вышестоящими: уровни из его строки оргструктуры,
+     * дополненные цепочкой родителей из справочника подразделений.
+     */
+    private Set<String> subdivisionsOf(User user) {
+        OrgStructureEmployee employee = dataManager.load(OrgStructureEmployee.class)
+                .query("select e from OrgStructureEmployee e where e.user = :user")
+                .parameter("user", user)
+                .maxResults(1)
+                .list()
+                .stream()
+                .findFirst()
+                .orElse(null);
+        if (employee == null) {
+            return Set.of();
+        }
+        Set<String> result = new LinkedHashSet<>(levelIds(employee));
+        Set<String> frontier = new HashSet<>(result);
+        while (!frontier.isEmpty()) {
+            Set<String> next = new HashSet<>();
+            dataManager.loadValues("select p.id from umida_OrgStructureSubdivision s join s.parent p"
+                            + " where s.id in :ids")
+                    .parameter("ids", frontier)
+                    .properties("parentId")
+                    .list()
+                    .forEach(kv -> {
+                        String parentId = kv.getValue("parentId");
+                        if (result.add(parentId)) {
+                            next.add(parentId);
+                        }
+                    });
+            frontier = next;
+        }
+        return result;
+    }
+
+    /**
+     * Идентификаторы подразделений всех уровней, к которым сотрудник отнесён в оргструктуре.
+     */
+    private static Set<String> levelIds(OrgStructureEmployee employee) {
+        return Stream.of(employee.getOrganizationId(), employee.getDepartmentId(), employee.getDivisionId(),
+                        employee.getSectionId(), employee.getUnitId())
+                .filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /**
+     * Сотрудники, у которых есть доступ через подразделение, с названием этого подразделения —
+     * для вкладки «Все». Подразделения, которым выдан доступ, раскрываются вниз по иерархии
+     * одним проходом по справочнику, чтобы не спрашивать базу про каждого сотрудника.
+     */
+    private Map<UUID, String> subdivisionCoverage(Report report) {
+        List<ReportSubdivisionAccess> granted = subdivisionAccesses(report).stream()
+                .filter(access -> withinPeriod(access.getValidFrom(), access.getValidTo()))
+                .toList();
+        if (granted.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, List<String>> children = subdivisionChildren();
+        Map<String, String> nameById = new HashMap<>();
+        for (ReportSubdivisionAccess access : granted) {
+            OrgStructureSubdivision subdivision = access.getSubdivision();
+            String name = subdivision.getName() == null ? subdivision.getId() : subdivision.getName();
+            withDescendants(List.of(subdivision.getId()), children)
+                    .forEach(id -> nameById.putIfAbsent(id, name));
+        }
+        Map<UUID, String> result = new HashMap<>();
+        dataManager.load(OrgStructureEmployee.class)
+                .query("select e from OrgStructureEmployee e where e.user is not null")
+                .fetchPlan(fp -> fp.addFetchPlan("_base").add("user", u -> u.addFetchPlan("_base")))
+                .list()
+                .forEach(employee -> levelIds(employee).stream()
+                        .map(nameById::get)
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .ifPresent(name -> result.putIfAbsent(employee.getUser().getId(), name)));
+        return result;
     }
 
     /**
@@ -449,7 +912,8 @@ public class ReportAccessService {
                             .add("subjectUser", u -> u.addFetchPlan("_base")
                                     .add("orgEmployee", e -> e.addFetchPlan("_base")))
                             .add("actorUser", u -> u.addFetchPlan("_base")
-                                    .add("orgEmployee", e -> e.addFetchPlan("_base"))));
+                                    .add("orgEmployee", e -> e.addFetchPlan("_base")))
+                            .add("subdivision", s -> s.addFetchPlan("_base")));
             if (onlyFor != null) {
                 loader = loader.parameter("subject", onlyFor);
             }
@@ -458,8 +922,8 @@ public class ReportAccessService {
     }
 
     /**
-     * Идентификаторы отчётов, которые сотрудник вправе запускать: свои плюс выданные ему.
-     * Администратору — все.
+     * Идентификаторы отчётов, которые сотрудник вправе запускать: свои, выданные ему или его
+     * подразделению, и отчёты, где владелец — его подразделение. Администратору — все.
      */
     public Set<UUID> availableReportIds(User user) {
         boolean administrator = isAdministrator(user);
@@ -487,42 +951,98 @@ public class ReportAccessService {
                     .stream()
                     .filter(this::withinPeriod)
                     .forEach(access -> ids.add(access.getReport().getId()));
+            Set<String> subdivisions = subdivisionsOf(user);
+            if (!subdivisions.isEmpty()) {
+                dataManager.load(ReportSubdivisionAccess.class)
+                        .query("select e from ReportSubdivisionAccess e where e.active = true"
+                                + " and e.subdivision.id in :subdivisions")
+                        .parameter("subdivisions", subdivisions)
+                        .list()
+                        .stream()
+                        .filter(access -> withinPeriod(access.getValidFrom(), access.getValidTo()))
+                        .forEach(access -> ids.add(access.getReport().getId()));
+            }
+            ids.addAll(subdivisionOwnedReportIds(user));
             return ids;
         });
     }
 
     /**
-     * Строки для таблиц экрана «Доступы»: владелец отчёта первым, затем действующие доступы, затем
-     * те, кто подал заявку и ждёт решения. У заявителя отметка «Заявка отправлена»; если доступ у
-     * него уже есть (просит повышения), новой строки не заводится — отметка ставится на его строку.
+     * Строки для таблиц экрана «Доступы»: владелец отчёта первым, за ним сотрудники подразделения-владельца,
+     * затем действующие доступы, затем те, кто подал заявку и ждёт решения. У заявителя отметка
+     * «Заявка отправлена»; если доступ у него уже есть (просит повышения), новой строки не
+     * заводится — отметка ставится на его строку.
      */
     public List<ReportAccessRow> accessRows(Report report) {
+        return systemAuthenticator.withSystem(() -> new ArrayList<>(accessRowsByUser(report).values()));
+    }
+
+    /**
+     * Строки вкладки «Все» у распорядителя доступов: сверх {@link #accessRows(Report)} — все
+     * действующие пользователи приложения, чтобы выдавать доступ сразу, без заявки. У тех, кому
+     * отчёт доступен через подразделение, указано это подразделение.
+     */
+    public List<ReportAccessRow> allUserRows(Report report) {
         return systemAuthenticator.withSystem(() -> {
-            List<ReportAccessRow> rows = new ArrayList<>();
-            User owner = owner(report);
-            if (owner != null) {
-                rows.add(row(owner, AccessLevel.OWNER, null, null, null));
-            }
-            for (ReportAccess access : accesses(report)) {
-                if (owner != null && owner.getId().equals(access.getUser().getId())) {
-                    continue;
-                }
-                rows.add(row(access.getUser(), access.getAccessLevel(),
-                        access.getValidFrom(), access.getValidTo(), access.getId()));
-            }
-            Map<UUID, ReportAccessRow> byUser = new HashMap<>();
-            rows.forEach(row -> byUser.put(row.getUserId(), row));
-            for (ReportAccessRequest request : pendingRequests(report)) {
-                ReportAccessRow row = byUser.get(request.getRequester().getId());
-                if (row == null) {
-                    row = row(request.getRequester(), AccessLevel.NONE, null, null, null);
-                    byUser.put(row.getUserId(), row);
-                    rows.add(row);
-                }
-                row.setGrantorStatus(GrantorStatus.PENDING);
-            }
+            Map<UUID, ReportAccessRow> byUser = accessRowsByUser(report);
+            Map<UUID, String> coverage = subdivisionCoverage(report);
+            byUser.values().forEach(row -> row.setSubdivisionName(coverage.get(row.getUserId())));
+
+            List<ReportAccessRow> others = new ArrayList<>();
+            dataManager.load(User.class)
+                    .query("select e from umida_User e where e.active = true")
+                    .list()
+                    .stream()
+                    .filter(user -> !byUser.containsKey(user.getId()))
+                    .forEach(user -> {
+                        String subdivision = coverage.get(user.getId());
+                        ReportAccessRow row = row(user, subdivision == null ? AccessLevel.NONE : AccessLevel.READ,
+                                null, null, null);
+                        row.setSubdivisionName(subdivision);
+                        others.add(row);
+                    });
+            // Сначала те, у кого доступ через подразделение, затем остальные — по алфавиту.
+            others.sort(Comparator.comparing((ReportAccessRow row) -> row.getSubdivisionName() == null)
+                    .thenComparing(ReportAccessRow::getFullName, String.CASE_INSENSITIVE_ORDER));
+            List<ReportAccessRow> rows = new ArrayList<>(byUser.values());
+            rows.addAll(others);
             return rows;
         });
+    }
+
+    private Map<UUID, ReportAccessRow> accessRowsByUser(Report report) {
+        Map<UUID, ReportAccessRow> byUser = new LinkedHashMap<>();
+        User owner = owner(report);
+        if (owner != null) {
+            byUser.put(owner.getId(), row(owner, AccessLevel.OWNER, null, null, null));
+        }
+        for (User member : ownerSubdivisionMembers(report)) {
+            byUser.putIfAbsent(member.getId(), row(member, AccessLevel.SUBDIVISION_OWNER, null, null, null));
+        }
+        for (ReportAccess access : accesses(report)) {
+            byUser.putIfAbsent(access.getUser().getId(), row(access.getUser(), access.getAccessLevel(),
+                    access.getValidFrom(), access.getValidTo(), access.getId()));
+        }
+        for (ReportAccessRequest request : pendingRequests(report)) {
+            ReportAccessRow row = byUser.computeIfAbsent(request.getRequester().getId(),
+                    id -> row(request.getRequester(), AccessLevel.NONE, null, null, null));
+            row.setGrantorStatus(GrantorStatus.PENDING);
+        }
+        return byUser;
+    }
+
+    /**
+     * Строка доступа выбранного сотрудника — для диалога «Настроить доступ».
+     */
+    @Nullable
+    public ReportAccess access(UUID accessId) {
+        return systemAuthenticator.withSystem(() -> dataManager.load(ReportAccess.class)
+                .id(accessId)
+                .fetchPlan(fp -> fp.addFetchPlan("_base")
+                        .add("user", u -> u.addFetchPlan("_base"))
+                        .add("report", r -> r.addFetchPlan("_base")))
+                .optional()
+                .orElse(null));
     }
 
     /**
@@ -561,12 +1081,14 @@ public class ReportAccessService {
     /**
      * Можно ли просить доступ у выбранного сотрудника.
      * <p>
-     * Просят только у владельца отчёта: остальные строки списка лишь показывают, у кого доступ
-     * есть. Нельзя, когда доступ уже есть — любого уровня, включая READ, — и когда заявка
-     * владельцу уже отправлена и ещё не решена.
+     * Просят только у владельца отчёта или сотрудника подразделения-владельца: остальные строки списка лишь
+     * показывают, у кого доступ есть. Нельзя, когда доступ уже есть — любого уровня, включая READ
+     * и доступ через подразделение, — и когда заявка этому адресату уже отправлена и ещё не решена.
      */
     public boolean canRequestFrom(User requester, Report report, ReportAccessRow grantorRow) {
-        if (grantorRow.getAccessLevel() != AccessLevel.OWNER || level(requester, report) != AccessLevel.NONE) {
+        boolean addresseeOwns = grantorRow.getAccessLevel() == AccessLevel.OWNER
+                || grantorRow.getAccessLevel() == AccessLevel.SUBDIVISION_OWNER;
+        if (!addresseeOwns || level(requester, report) != AccessLevel.NONE) {
             return false;
         }
         return grantorRow.getGrantorStatus() != GrantorStatus.PENDING;
@@ -679,9 +1201,13 @@ public class ReportAccessService {
     }
 
     private boolean withinPeriod(ReportAccess access) {
+        return withinPeriod(access.getValidFrom(), access.getValidTo());
+    }
+
+    private boolean withinPeriod(@Nullable LocalDate validFrom, @Nullable LocalDate validTo) {
         LocalDate today = LocalDate.now();
-        return (access.getValidFrom() == null || !access.getValidFrom().isAfter(today))
-                && (access.getValidTo() == null || !access.getValidTo().isBefore(today));
+        return (validFrom == null || !validFrom.isAfter(today))
+                && (validTo == null || !validTo.isBefore(today));
     }
 
     private ReportAccessRequest reload(ReportAccessRequest request) {
@@ -693,7 +1219,7 @@ public class ReportAccessService {
                 .one();
     }
 
-    private ReportAccessEvent newEvent(Report report, AccessEventType type, User subject, User actor) {
+    private ReportAccessEvent newEvent(Report report, AccessEventType type, @Nullable User subject, User actor) {
         ReportAccessEvent event = dataManager.create(ReportAccessEvent.class);
         event.setReport(report);
         event.setEventDate(LocalDateTime.now());

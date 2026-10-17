@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.kapitalbank.umida.entity.ReportDomain;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.entity.UserReport;
-import uz.kapitalbank.umida.entity.orgstructure.OrgStructureSubdivision;
+import uz.kapitalbank.umida.entity.OrgStructureSubdivision;
 
 import java.util.ArrayList;
 import java.util.HashMap;

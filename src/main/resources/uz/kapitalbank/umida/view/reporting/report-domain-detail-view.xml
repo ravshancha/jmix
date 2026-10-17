@@ -7,6 +7,7 @@
             <fetchPlan extends="_base">
                 <property name="parent" fetchPlan="_instance_name"/>
                 <property name="businessOwner" fetchPlan="_instance_name"/>
+                <property name="subdivision" fetchPlan="_instance_name"/>
             </fetchPlan>
             <loader id="reportDomainDl"/>
         </instance>
@@ -36,6 +37,13 @@
                 <textField id="shortNameField" property="shortName"/>
                 <textField id="longNameField" property="longName"/>
                 <entityPicker id="businessOwnerField" property="businessOwner">
+                    <actions>
+                        <action id="lookup" type="entity_lookup"/>
+                        <action id="clear" type="entity_clear"/>
+                    </actions>
+                </entityPicker>
+                <!-- Подразделение-владелец: справочник большой, поэтому выбор — диалогом. -->
+                <entityPicker id="subdivisionField" property="subdivision">
                     <actions>
                         <action id="lookup" type="entity_lookup"/>
                         <action id="clear" type="entity_clear"/>

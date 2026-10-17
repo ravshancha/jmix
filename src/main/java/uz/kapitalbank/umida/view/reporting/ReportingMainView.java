@@ -14,6 +14,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 import io.jmix.core.*;
 import io.jmix.core.accesscontext.SpecificOperationAccessContext;
+import io.jmix.core.entity.EntityValues;
 import io.jmix.core.querycondition.Condition;
 import io.jmix.core.querycondition.LogicalCondition;
 import io.jmix.core.security.CurrentAuthentication;
@@ -23,6 +24,7 @@ import io.jmix.flowui.Notifications;
 import io.jmix.flowui.ViewNavigators;
 import io.jmix.flowui.UiProperties;
 import io.jmix.flowui.component.grid.DataGrid;
+import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.valuepicker.EntityPicker;
 import io.jmix.flowui.component.select.JmixSelect;
 import io.jmix.flowui.component.textfield.TypedTextField;
@@ -32,6 +34,8 @@ import io.jmix.flowui.kit.action.Action;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.dropdownbutton.DropdownButton;
+import io.jmix.flowui.model.CollectionChangeType;
+import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
 import io.jmix.reports.ReportImportExport;
@@ -49,6 +53,7 @@ import io.jmix.reportsflowui.view.reportwizard.ReportWizardCreatorView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.userdetails.UserDetails;
+import uz.kapitalbank.umida.entity.ReportListRow;
 import uz.kapitalbank.umida.entity.User;
 import uz.kapitalbank.umida.entity.UserReport;
 import uz.kapitalbank.umida.entity.ReportDomain;
@@ -134,6 +139,14 @@ public class ReportingMainView extends StandardListView<UserReport> {
     private EntityPicker<ReportGroup> groupFilterField;
     @ViewComponent
     private EntityPicker<ReportDomain> domainFilterField;
+    @ViewComponent
+    private JmixSelect<ReportGrouping> groupingField;
+    @ViewComponent
+    private CollectionContainer<UserReport> userReportsDc;
+    @ViewComponent
+    private CollectionContainer<ReportListRow> groupedRowsDc;
+    @ViewComponent
+    private TreeDataGrid<ReportListRow> groupedReportsDataGrid;
 
 
     /**
@@ -159,6 +172,27 @@ public class ReportingMainView extends StandardListView<UserReport> {
             this.messageKey = messageKey;
         }
     }
+
+    /**
+     * Группировка списка, выбранная рядом с пагинацией. При группировке запрос сортируется сначала
+     * по группе, а страница показывается деревом с раскрывающимися заголовками групп.
+     */
+    private enum ReportGrouping {
+        NONE("grouping.none"),
+        BY_GROUP("grouping.byGroup"),
+        BY_DOMAIN("grouping.byDomain");
+
+        private final String messageKey;
+
+        ReportGrouping(String messageKey) {
+            this.messageKey = messageKey;
+        }
+    }
+
+    /**
+     * Part name of a group header row in the grouped tree. See {@code reporting.css}.
+     */
+    private static final String GROUP_HEADER_PART = "report-group-header";
 
     /**
      * Specific permission that distinguishes administrators (who may create/edit/import/export
@@ -192,6 +226,8 @@ public class ReportingMainView extends StandardListView<UserReport> {
         initFilterListeners();
 
         initScopeFilter();
+
+        initGrouping();
 
         if (!isManagePermitted()) {
             // Каждая команда — действие грида, поэтому одно скрытие убирает и кнопку тулбара, и
@@ -234,6 +270,109 @@ public class ReportingMainView extends StandardListView<UserReport> {
         scopeFilterField.setEmptySelectionAllowed(false);
         scopeFilterField.setValue(defaultScope());
         scopeFilterField.addValueChangeListener(e -> reloadReports());
+    }
+
+    /**
+     * Выбор строки дерева переносится в плоский грид: все команды тулбара и контекстного меню —
+     * его действия и берут отчёт из его выделения. Заголовок группы выделение снимает.
+     */
+    private void initGrouping() {
+        groupingField.setItems(ReportGrouping.values());
+        groupingField.setItemLabelGenerator(item -> messageBundle.getMessage(item.messageKey));
+        groupingField.setEmptySelectionAllowed(false);
+        // По умолчанию список сгруппирован по группам отчётов; «Все» — плоский список.
+        groupingField.setValue(ReportGrouping.BY_GROUP);
+        applyGroupingMode();
+        groupingField.addValueChangeListener(e -> {
+            applyGroupingMode();
+            reloadReports();
+        });
+
+        groupedReportsDataGrid.setPartNameGenerator(row ->
+                row.getUserReport() == null ? GROUP_HEADER_PART : null);
+        groupedReportsDataGrid.addSelectionListener(e -> {
+            ReportListRow row = groupedReportsDataGrid.getSingleSelectedItem();
+            if (row != null && row.getUserReport() != null) {
+                userReportsDataGrid.select(row.getUserReport());
+            } else {
+                userReportsDataGrid.deselectAll();
+            }
+        });
+    }
+
+    private void applyGroupingMode() {
+        boolean grouped = isGrouped();
+        userReportsDataGrid.deselectAll();
+        groupedReportsDataGrid.deselectAll();
+        userReportsDataGrid.setVisible(!grouped);
+        groupedReportsDataGrid.setVisible(grouped);
+    }
+
+    private boolean isGrouped() {
+        ReportGrouping grouping = groupingField.getValue();
+        return grouping != null && grouping != ReportGrouping.NONE;
+    }
+
+    /**
+     * Перестраивает дерево после каждой загрузки страницы. Запрос уже отсортирован по группе,
+     * поэтому заголовки идут в том же порядке, а отчёты внутри группы сохраняют порядок запроса.
+     */
+    @Subscribe(id = "userReportsDc", target = Target.DATA_CONTAINER)
+    public void onUserReportsDcCollectionChange(CollectionContainer.CollectionChangeEvent<UserReport> event) {
+        if (event.getChangeType() == CollectionChangeType.REFRESH) {
+            rebuildGroupedRows();
+        }
+    }
+
+    private void rebuildGroupedRows() {
+        if (!isGrouped()) {
+            groupedRowsDc.setItems(List.of());
+            return;
+        }
+        ReportGrouping grouping = groupingField.getValue();
+
+        Map<String, ReportListRow> headers = new LinkedHashMap<>();
+        Map<ReportListRow, Integer> counts = new HashMap<>();
+        List<ReportListRow> reportRows = new ArrayList<>();
+        for (UserReport userReport : userReportsDc.getItems()) {
+            Object groupKey = grouping == ReportGrouping.BY_GROUP
+                    ? userReport.getReport().getGroup()
+                    : userReport.getDomain();
+            String headerId = groupKey == null ? "none" : String.valueOf(EntityValues.getId(groupKey));
+            ReportListRow header = headers.computeIfAbsent(headerId, id -> {
+                ReportListRow row = dataManager.create(ReportListRow.class);
+                row.setId("group:" + id);
+                row.setName(groupKey == null
+                        ? messageBundle.getMessage(grouping == ReportGrouping.BY_GROUP
+                                ? "grouping.noGroup" : "grouping.noDomain")
+                        : metadataTools.getInstanceName(groupKey));
+                return row;
+            });
+            counts.merge(header, 1, Integer::sum);
+            reportRows.add(toReportRow(userReport, header));
+        }
+        headers.values().forEach(header ->
+                header.setName(header.getName() + " (" + counts.get(header) + ")"));
+
+        List<ReportListRow> rows = new ArrayList<>(headers.values());
+        rows.addAll(reportRows);
+        groupedRowsDc.setItems(rows);
+        groupedReportsDataGrid.expand(headers.values());
+    }
+
+    private ReportListRow toReportRow(UserReport userReport, ReportListRow header) {
+        Report report = userReport.getReport();
+        ReportListRow row = dataManager.create(ReportListRow.class);
+        row.setId("report:" + userReport.getId());
+        row.setParent(header);
+        row.setUserReport(userReport);
+        row.setName(report.getName());
+        row.setCode(report.getCode());
+        row.setOwner(userReport.getSubdivision() == null
+                ? null : metadataTools.getInstanceName(userReport.getSubdivision()));
+        row.setReportGroup(report.getGroup() == null ? null : metadataTools.getInstanceName(report.getGroup()));
+        row.setDomain(userReport.getDomain() == null ? null : userReport.getDomain().getInstanceName());
+        return row;
     }
 
     /**
@@ -698,6 +837,25 @@ public class ReportingMainView extends StandardListView<UserReport> {
         FilterQuery filterQuery = buildFilterQuery();
         if (filterQuery == null) {
             return List.of();
+        }
+
+        if (isGrouped()) {
+            // Сортировка по группе задаётся в самом запросе: левые соединения оставляют в списке
+            // отчёты без группы или домена (они идут последними), а сортировка колонок в дереве
+            // отключена. Так одна группа не разбрасывается по разным страницам.
+            String query = groupingField.getValue() == ReportGrouping.BY_GROUP
+                    ? "select e from UserReport e left join e.report r left join r.group g"
+                    + filterQuery.where() + " order by g.title, r.name"
+                    : "select e from UserReport e left join e.report r left join e.domain d"
+                    + filterQuery.where() + " order by d.shortName, d.code, r.name";
+            return dataManager.load(UserReport.class)
+                    .query(query)
+                    .condition(headerFilterCondition(loadContext.getQuery()))
+                    .parameters(filterQuery.parameters())
+                    .fetchPlan(loadContext.getFetchPlan())
+                    .firstResult(loadContext.getQuery().getFirstResult())
+                    .maxResults(loadContext.getQuery().getMaxResults())
+                    .list();
         }
 
         Sort sort = loadContext.getQuery().getSort();

@@ -44,6 +44,19 @@ public class ReportAccessRow {
      */
     private GrantorStatus grantorStatus;
 
+    /**
+     * Подразделение, через которое у сотрудника есть доступ, — только на вкладке «Все».
+     */
+    private String subdivisionName;
+
+    public String getSubdivisionName() {
+        return subdivisionName;
+    }
+
+    public void setSubdivisionName(String subdivisionName) {
+        this.subdivisionName = subdivisionName;
+    }
+
     public GrantorStatus getGrantorStatus() {
         return grantorStatus;
     }

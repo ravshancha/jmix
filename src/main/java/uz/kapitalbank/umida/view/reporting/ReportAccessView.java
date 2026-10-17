@@ -20,6 +20,8 @@ import io.jmix.flowui.app.inputdialog.DialogActions;
 import io.jmix.flowui.app.inputdialog.DialogOutcome;
 import io.jmix.flowui.app.inputdialog.InputParameter;
 import io.jmix.flowui.component.grid.DataGrid;
+import io.jmix.flowui.component.grid.TreeDataGrid;
+import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.component.tabsheet.JmixTabSheet;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.model.CollectionContainer;
@@ -38,20 +40,32 @@ import uz.kapitalbank.umida.entity.ReportAccess;
 import uz.kapitalbank.umida.entity.ReportAccessEvent;
 import uz.kapitalbank.umida.entity.ReportAccessRequest;
 import uz.kapitalbank.umida.entity.ReportAccessRow;
+import uz.kapitalbank.umida.entity.ReportSubdivisionAccess;
+import uz.kapitalbank.umida.entity.ReportSubdivisionRow;
 import uz.kapitalbank.umida.entity.User;
+import uz.kapitalbank.umida.entity.OrgStructureSubdivision;
+import uz.kapitalbank.umida.enums.AccessLevel;
 import uz.kapitalbank.umida.service.ReportAccessService;
 import uz.kapitalbank.umida.view.main.MainView;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Экран «Доступы» по отчёту. Открывается из списка отчётов — кнопкой или пунктом контекстного
  * меню строки — и показывает разный набор вкладок в зависимости от прав.
  * <p>
- * Обычный сотрудник видит «Доступы» (у кого можно попросить) и «Историю» по себе. Владелец отчёта
- * и обладатель уровня GRANT дополнительно получают «Все» (кто и что имеет), «Подразделения»
- * (заглушка следующего этапа) и «Запросы» со счётчиком нерешённых заявок.
+ * Обычный сотрудник видит «Доступы» (у кого можно попросить) и «Историю» по себе. Владелец отчёта,
+ * сотрудники подразделения-владельца и обладатель уровня GRANT дополнительно получают «Все» (кто и что имеет),
+ * «Подразделения» (доступ подразделениям целиком) и «Запросы» со счётчиком нерешённых заявок.
+ * <p>
+ * Распорядитель доступов — владелец, сотрудник подразделения-владельца, администратор — видит на вкладке «Все»
+ * всех пользователей приложения и выдаёт, настраивает и закрывает доступ сам, без заявки; он же
+ * управляет доступами подразделений.
  */
 @Route(value = "report-access/:reportId", layout = MainView.class)
 @ViewController(id = "Report.access")
@@ -99,6 +113,18 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
     @ViewComponent
     private CollectionContainer<ReportAccessRequest> requestsDc;
     @ViewComponent
+    private CollectionContainer<ReportSubdivisionRow> subdivisionRowsDc;
+    @ViewComponent
+    private TreeDataGrid<ReportSubdivisionRow> subdivisionsDataGrid;
+    @ViewComponent
+    private TypedTextField<String> subdivisionFilterField;
+    @ViewComponent
+    private JmixButton grantSubdivisionButton;
+    @ViewComponent
+    private JmixButton editSubdivisionButton;
+    @ViewComponent
+    private JmixButton revokeSubdivisionButton;
+    @ViewComponent
     private CollectionContainer<ReportAccessEvent> historyDc;
     @ViewComponent
     private JmixButton requestAccessButton;
@@ -117,10 +143,15 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
     private Report report;
     private boolean decisionMaker;
     /**
-     * Распорядитель доступов — владелец отчёта или администратор: только они закрывают и
-     * отзывают выданные доступы. Делегату с уровнем GRANT это недоступно.
+     * Распорядитель доступов — владелец отчёта, сотрудник подразделения-владельца или администратор: только они
+     * выдают доступ без заявки, настраивают и закрывают его, в том числе подразделениям. Делегату
+     * с уровнем GRANT это недоступно.
      */
     private boolean manager;
+    /**
+     * Всё дерево подразделений: поиск сужает показ, а не перечитывает справочник.
+     */
+    private List<ReportSubdivisionRow> subdivisionRows = List.of();
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -128,6 +159,8 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         grantorsDataGrid.addSelectionListener(selection -> updateRequestButton());
         allDataGrid.addSelectionListener(selection -> updateAllTabButtons());
         requestsDataGrid.addSelectionListener(selection -> updateDecisionButtons());
+        subdivisionsDataGrid.addSelectionListener(selection -> updateSubdivisionButtons());
+        subdivisionFilterField.addValueChangeListener(e -> showSubdivisions());
 
         // «‹ Доступы» и название отчёта живут в верхней панели приложения, а не в теле экрана.
         addAttachListener(e -> {
@@ -176,9 +209,14 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         // название отчёта ставится на место явно.
         placeReportTitle();
         revokeAccessButton.setVisible(manager);
+        editAccessButton.setVisible(manager);
+        grantSubdivisionButton.setVisible(manager);
+        editSubdivisionButton.setVisible(manager);
+        revokeSubdivisionButton.setVisible(manager);
         // Владельцу и администратору доступ полный по определению — просить им нечего.
         requestAccessButton.setVisible(!manager);
         updateAllTabButtons();
+        updateSubdivisionButtons();
     }
 
     /**
@@ -204,7 +242,13 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
 
     private void reloadAll() {
         if (decisionMaker) {
-            allRowsDc.setItems(reportAccessService.accessRows(report));
+            // Распорядителю — все пользователи, чтобы выдавать доступ без заявки; делегату с
+            // уровнем GRANT — только те, у кого доступ есть или ожидается.
+            allRowsDc.setItems(manager
+                    ? reportAccessService.allUserRows(report)
+                    : reportAccessService.accessRows(report));
+            subdivisionRows = reportAccessService.subdivisionRows(report);
+            showSubdivisions();
             requestsDc.setItems(reportAccessService.pendingRequests(report));
             historyDc.setItems(reportAccessService.history(report, null));
             updateRequestsBadge();
@@ -215,6 +259,7 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         updateRequestButton();
         updateAllTabButtons();
         updateDecisionButtons();
+        updateSubdivisionButtons();
     }
 
     /**
@@ -223,15 +268,71 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
      * отрезал бы себя от собственного отчёта. Закрывать нечего и на строке владельца: доступа как
      * строки у него нет, он есть по определению. Не закрывается и доступ администратора: он и без
      * строки видит всё, закрытие ничего бы не изменило.
+     * <p>
+     * У распорядителя «Дать доступ» активна на сотруднике без личного доступа, «Настроить» — на
+     * сотруднике с ним. Владельцу и подразделению-владельцу доступ не выдают: он у них по определению.
      */
     private void updateAllTabButtons() {
         ReportAccessRow row = allDataGrid.getSingleSelectedItem();
         boolean self = isSelf(row);
         boolean other = row != null && !self;
-        grantAccessButton.setEnabled(other);
-        editAccessButton.setEnabled(other);
-        revokeAccessButton.setEnabled(manager && other && row.getAccessId() != null
+        if (!manager) {
+            grantAccessButton.setEnabled(other);
+            editAccessButton.setEnabled(false);
+            revokeAccessButton.setEnabled(false);
+            return;
+        }
+        boolean grantable = other && row.getAccessLevel() != AccessLevel.OWNER
+                && row.getAccessLevel() != AccessLevel.SUBDIVISION_OWNER;
+        grantAccessButton.setEnabled(grantable && row.getAccessId() == null);
+        editAccessButton.setEnabled(grantable && row.getAccessId() != null);
+        revokeAccessButton.setEnabled(grantable && row.getAccessId() != null
                 && !reportAccessService.holdsAdministration(reportAccessService.user(row.getUserId())));
+    }
+
+    /**
+     * «Дать доступ» — подразделению без своего доступа, «Настроить» и «Закрыть» — с ним.
+     */
+    private void updateSubdivisionButtons() {
+        ReportSubdivisionRow row = manager ? subdivisionsDataGrid.getSingleSelectedItem() : null;
+        grantSubdivisionButton.setEnabled(row != null && row.getAccessId() == null);
+        editSubdivisionButton.setEnabled(row != null && row.getAccessId() != null);
+        revokeSubdivisionButton.setEnabled(row != null && row.getAccessId() != null);
+    }
+
+    /**
+     * Показывает дерево целиком либо, при поиске, найденные подразделения вместе с цепочкой
+     * вышестоящих — иначе дереву не к чему их прицепить. Найденное раскрывается. Выбранная строка
+     * сохраняется и после перечитывания.
+     */
+    private void showSubdivisions() {
+        ReportSubdivisionRow selected = subdivisionsDataGrid.getSingleSelectedItem();
+        String filter = subdivisionFilterField.getValue() == null
+                ? "" : subdivisionFilterField.getValue().trim().toLowerCase();
+        List<ReportSubdivisionRow> shown = subdivisionRows;
+        if (!filter.isEmpty()) {
+            Set<ReportSubdivisionRow> visible = new LinkedHashSet<>();
+            for (ReportSubdivisionRow row : subdivisionRows) {
+                if (row.getName().toLowerCase().contains(filter)) {
+                    // Вверх по цепочке до первого уже добавленного — выше него всё уже есть.
+                    ReportSubdivisionRow up = row;
+                    while (up != null && visible.add(up)) {
+                        up = up.getParent();
+                    }
+                }
+            }
+            shown = subdivisionRows.stream().filter(visible::contains).toList();
+        }
+        subdivisionRowsDc.setItems(shown);
+        if (!filter.isEmpty()) {
+            subdivisionsDataGrid.expand(shown);
+        }
+        if (selected != null) {
+            shown.stream()
+                    .filter(row -> row.getId().equals(selected.getId()))
+                    .findFirst()
+                    .ifPresent(subdivisionsDataGrid::select);
+        }
     }
 
     /**
@@ -355,19 +456,100 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
      */
     @Subscribe("editAccessButton")
     public void onEditAccess(ClickEvent<Button> event) {
-        notifications.create(messageBundle.getMessage("editAccessNotImplemented"))
-                .withType(Notifications.Type.WARNING)
-                .show();
-    }
-
-    @Subscribe("grantAccessButton")
-    public void onGrantAccess(ClickEvent<Button> event) {
-        if (isSelf(allDataGrid.getSingleSelectedItem())) {
+        ReportAccessRow row = allDataGrid.getSingleSelectedItem();
+        if (!manager || row == null || row.getAccessId() == null || isSelf(row)) {
             return;
         }
-        notifications.create(messageBundle.getMessage("grantAccessFromRequests"))
-                .withType(Notifications.Type.WARNING)
-                .show();
+        openUserGrantDialog(row, reportAccessService.access(row.getAccessId()));
+    }
+
+    /**
+     * Распорядитель выдаёт доступ сразу, без заявки. Делегату с уровнем GRANT доступ по-прежнему
+     * выдаётся только по заявке — со вкладки «Запросы».
+     */
+    @Subscribe("grantAccessButton")
+    public void onGrantAccess(ClickEvent<Button> event) {
+        ReportAccessRow row = allDataGrid.getSingleSelectedItem();
+        if (row == null || isSelf(row)) {
+            return;
+        }
+        if (!manager) {
+            notifications.create(messageBundle.getMessage("grantAccessFromRequests"))
+                    .withType(Notifications.Type.WARNING)
+                    .show();
+            return;
+        }
+        openUserGrantDialog(row, null);
+    }
+
+    private void openUserGrantDialog(ReportAccessRow row, @Nullable ReportAccess current) {
+        var dialog = dialogWindows.view(this, GrantAccessDialogView.class).build();
+        dialog.getView().setUser(report, reportAccessService.user(row.getUserId()), current);
+        dialog.addAfterCloseListener(e -> reloadAll());
+        dialog.open();
+    }
+
+    // ------------------------------------------------------------- подразделения
+
+    /**
+     * Доступ выдаётся прямо из дерева, без диалога: с сегодняшнего дня и бессрочно. Срок, если
+     * нужен, задаётся потом кнопкой «Настроить».
+     */
+    @Subscribe("grantSubdivisionButton")
+    public void onGrantSubdivision(ClickEvent<Button> event) {
+        ReportSubdivisionRow row = subdivisionsDataGrid.getSingleSelectedItem();
+        if (!manager || row == null || row.getAccessId() != null) {
+            return;
+        }
+        reportAccessService.grantSubdivision(report, dataManager.getReference(OrgStructureSubdivision.class, row.getId()),
+                currentUser(), LocalDate.now(), null);
+        notifications.create(messageBundle.getMessage("accessGranted")).show();
+        reloadAll();
+    }
+
+    /**
+     * Срок доступа подразделения меняется в диалоге выдачи.
+     */
+    @Subscribe("editSubdivisionButton")
+    public void onEditSubdivision(ClickEvent<Button> event) {
+        ReportSubdivisionRow row = subdivisionsDataGrid.getSingleSelectedItem();
+        if (!manager || row == null || row.getAccessId() == null) {
+            return;
+        }
+        ReportSubdivisionAccess access = reportAccessService.subdivisionAccess(row.getAccessId());
+        var dialog = dialogWindows.view(this, GrantAccessDialogView.class).build();
+        dialog.getView().setSubdivision(report, access.getSubdivision(), access);
+        dialog.addAfterCloseListener(e -> reloadAll());
+        dialog.open();
+    }
+
+    @Subscribe("revokeSubdivisionButton")
+    public void onRevokeSubdivision(ClickEvent<Button> event) {
+        ReportSubdivisionRow row = subdivisionsDataGrid.getSingleSelectedItem();
+        if (!manager || row == null || row.getAccessId() == null) {
+            return;
+        }
+        askReason("revokeDialogHeader", "revokeReasonRequired",
+                reason -> {
+                    reportAccessService.revokeSubdivision(reportAccessService.subdivisionAccess(row.getAccessId()),
+                            currentUser(), reason);
+                    notifications.create(messageBundle.getMessage("accessRevoked")).show();
+                    reloadAll();
+                });
+    }
+
+    /**
+     * «Права доступа» подразделения: свой доступ либо вышестоящее, через которое он уже есть.
+     */
+    @Supply(to = "subdivisionsDataGrid.subdivisionAccess", subject = "renderer")
+    private com.vaadin.flow.data.renderer.Renderer<ReportSubdivisionRow> subdivisionAccessRenderer() {
+        return new com.vaadin.flow.data.renderer.TextRenderer<>(row -> {
+            if (row.getAccessId() != null) {
+                return messageBundle.getMessage("subdivisionAccess.own");
+            }
+            return row.getInheritedFrom() == null
+                    ? "" : messageBundle.formatMessage("subdivisionAccess.inherited", row.getInheritedFrom());
+        });
     }
 
     @Subscribe("backButton")
@@ -388,6 +570,21 @@ public class ReportAccessView extends StandardView implements BeforeEnterObserve
         return new com.vaadin.flow.data.renderer.TextRenderer<>(
                 request -> request.getAddressee() == null
                         ? "" : ReportAccessService.displayName(request.getAddressee()));
+    }
+
+    /**
+     * «Пользователь» в журнале: сотрудник, а у событий по доступу подразделения — подразделение.
+     */
+    @Supply(to = "historyDataGrid.subjectName", subject = "renderer")
+    private com.vaadin.flow.data.renderer.Renderer<ReportAccessEvent> subjectNameRenderer() {
+        return new com.vaadin.flow.data.renderer.TextRenderer<>(event -> {
+            if (event.getSubjectUser() != null) {
+                return event.getSubjectUser().getDisplayName();
+            }
+            OrgStructureSubdivision subdivision = event.getSubdivision();
+            return subdivision == null ? "" : messageBundle.formatMessage("subdivisionSubject",
+                    subdivision.getName() == null ? subdivision.getId() : subdivision.getName());
+        });
     }
 
     /**
