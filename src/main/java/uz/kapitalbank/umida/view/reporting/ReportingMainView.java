@@ -282,10 +282,10 @@ public class ReportingMainView extends StandardListView<UserReport> {
         groupingField.setEmptySelectionAllowed(false);
         // По умолчанию список сгруппирован по группам отчётов; «Все» — плоский список.
         groupingField.setValue(ReportGrouping.BY_GROUP);
-        refreshGroupingItemsEnabled();
+        refreshGroupingEnabled();
         applyGroupingMode();
         groupingField.addValueChangeListener(e -> {
-            refreshGroupingItemsEnabled();
+            refreshGroupingEnabled();
             applyGroupingMode();
             reloadReports();
         });
@@ -303,26 +303,23 @@ public class ReportingMainView extends StandardListView<UserReport> {
     }
 
     /**
-     * Выбранный фильтр делает группировку по тому же признаку избыточной.
-     * Текущий режим также недоступен для повторного выбора.
+     * При фильтрации по группе или домену доступен только плоский список «Все».
+     * Выбор группировки снова доступен после очистки обоих фильтров.
      */
-    private void refreshGroupingItemsEnabled() {
-        ReportGrouping current = groupingField.getValue();
-        boolean groupFiltered = !groupFilterField.isEmpty();
-        boolean domainFiltered = !domainFilterField.isEmpty();
-        groupingField.setItemEnabledProvider(item -> item != current
-                && (item != ReportGrouping.BY_GROUP || !groupFiltered)
-                && (item != ReportGrouping.BY_DOMAIN || !domainFiltered));
+    private void refreshGroupingEnabled() {
+        groupingField.setEnabled(!hasGroupingFilter());
+    }
+
+    private boolean hasGroupingFilter() {
+        return !groupFilterField.isEmpty() || !domainFilterField.isEmpty();
     }
 
     private void onGroupingFilterChanged() {
-        ReportGrouping current = groupingField.getValue();
-        if ((current == ReportGrouping.BY_GROUP && !groupFilterField.isEmpty())
-                || (current == ReportGrouping.BY_DOMAIN && !domainFilterField.isEmpty())) {
-            // Listener режима сам обновит доступность вариантов и перезагрузит список.
+        if (hasGroupingFilter() && groupingField.getValue() != ReportGrouping.NONE) {
+            // Listener режима сам обновит доступность select и перезагрузит список.
             groupingField.setValue(ReportGrouping.NONE);
         } else {
-            refreshGroupingItemsEnabled();
+            refreshGroupingEnabled();
             reloadReports();
         }
     }
@@ -413,7 +410,7 @@ public class ReportingMainView extends StandardListView<UserReport> {
     private void initFilterListeners() {
         nameFilterField.addValueChangeListener(e -> reloadReports());
         codeFilterField.addValueChangeListener(e -> reloadReports());
-        // Фильтр блокирует группировку по тому же признаку; очистка снова открывает вариант.
+        // Любой из двух фильтров переводит список в «Все» и блокирует select целиком.
         groupFilterField.addValueChangeListener(e -> onGroupingFilterChanged());
         domainFilterField.addValueChangeListener(e -> onGroupingFilterChanged());
     }

@@ -34,12 +34,23 @@ th { background:var(--card); }
 <h2>Nima qilinadi</h2>
 <ul>
 <li>Toolbar o'ng tomonida, pagination oldidan <b>select</b> qo'shiladi: <i>Все</i>, <i>По группам</i>, <i>По доменам</i>. <b>Standart qiymat — «По группам»</b>: sahifa ochilganda ro'yxat darhol guruhlar bo'yicha daraxt bo'lib chiqadi.</li>
-<li>«Группа» filtri tanlansa «По группам», «Домен» filtri tanlansa «По доменам» varianti bloklanadi. Faol guruhlash shu filtrga mos bo‘lsa, select avtomatik «Все»ga o‘tadi. Ikkala filtr tanlansa, faqat tekis ro‘yxat qoladi. Filtr tozalanganda tegishli variant yana ochiladi; oldingi rejim avtomatik tiklanmaydi. Joriy tanlangan variantni qayta tanlash ham bloklangan.</li>
+<li>«Группа» yoki «Домен» filtridan bittasi tanlansa ham, pagination oldidagi select avtomatik «Все»ga o‘tadi va butunlay bloklanadi. Ikkala filtr ham tozalanganda select yana ochiladi; qiymat «Все» bo‘lib qoladi.</li>
 <li><i>Все</i> tanlansa oddiy (tekis) jadval, avvalgidek ustun bo'yicha saralash va filtrlar bilan ishlaydi.</li>
 <li><i>По группам</i> yoki <i>По доменам</i> tanlansa, so'rov avval guruh/domen nomi, keyin hisobot nomi bo'yicha saralanadi. Sahifa ochiladigan sarlavhali daraxt ko'rinishida chiqadi, masalan «Тестирование (2)». Guruhi yo'q hisobotlar oxirida «Без группы» / «Без домена» ostida turadi.</li>
 <li>Pagination o'zgarmaydi: har sahifada 20 ta hisobot. Saralash bazada bo'lgani uchun bir guruh sahifalar orasida aralashib ketmaydi.</li>
 <li>Daraxtda tanlangan qator oddiy jadvalga ham tanlanadi. Shuning uchun «Выполнить», «Описание», «История исполнения», «Доступы» va kontekst menyu hech o'zgarishsiz ishlaydi.</li>
 </ul>
+
+<h2>Filtr va select qanday ishlaydi</h2>
+<p>Guruh yoki domen filtri tanlanganda hisobotlar tekis jadvalda ko‘rsatiladi. Pagination yonidagi select «Все» qiymatida turadi va uni ochib, boshqa rejimni tanlab bo‘lmaydi.</p>
+<div class="wrap"><table>
+<tr><th>Tanlangan filtr</th><th>Select qiymati</th><th>Select holati</th></tr>
+<tr><td>Guruh ham, domen ham tanlanmagan</td><td>Sahifa ochilganda «По группам»; filtrlar tozalangach «Все»</td><td>Ochiq — istalgan rejimni tanlash mumkin</td></tr>
+<tr><td>Faqat «Группа»</td><td>«Все»</td><td>Butunlay bloklangan</td></tr>
+<tr><td>Faqat «Домен»</td><td>«Все»</td><td>Butunlay bloklangan</td></tr>
+<tr><td>«Группа» va «Домен»</td><td>«Все»</td><td>Butunlay bloklangan</td></tr>
+</table></div>
+<div class="note">Ikkala filtr tanlangan bo‘lsa, bittasini tozalash selectni ochmaydi. Filtrlardagi × yoki umumiy tozalash tugmasi bilan ikkala filtr ham tozalangach select qayta ochiladi. Nom, kod va srez filtrlari selectni bloklamaydi.</div>
 
 <h2>Fayllar ro'yxati</h2>
 <div class="wrap"><table>
@@ -255,10 +266,10 @@ import uz.kapitalbank.umida.entity.ReportListRow;</code></pre>
         groupingField.setEmptySelectionAllowed(false);
         // По умолчанию список сгруппирован по группам отчётов; «Все» — плоский список.
         groupingField.setValue(ReportGrouping.BY_GROUP);
-        refreshGroupingItemsEnabled();
+        refreshGroupingEnabled();
         applyGroupingMode();
         groupingField.addValueChangeListener(e -&gt; {
-            refreshGroupingItemsEnabled();
+            refreshGroupingEnabled();
             applyGroupingMode();
             reloadReports();
         });
@@ -276,26 +287,23 @@ import uz.kapitalbank.umida.entity.ReportListRow;</code></pre>
     }
 
     /**
-     * Выбранный фильтр делает группировку по тому же признаку избыточной.
-     * Текущий режим также недоступен для повторного выбора.
+     * При фильтрации по группе или домену доступен только плоский список «Все».
+     * Выбор группировки снова доступен после очистки обоих фильтров.
      */
-    private void refreshGroupingItemsEnabled() {
-        ReportGrouping current = groupingField.getValue();
-        boolean groupFiltered = !groupFilterField.isEmpty();
-        boolean domainFiltered = !domainFilterField.isEmpty();
-        groupingField.setItemEnabledProvider(item -&gt; item != current
-                &amp;&amp; (item != ReportGrouping.BY_GROUP || !groupFiltered)
-                &amp;&amp; (item != ReportGrouping.BY_DOMAIN || !domainFiltered));
+    private void refreshGroupingEnabled() {
+        groupingField.setEnabled(!hasGroupingFilter());
+    }
+
+    private boolean hasGroupingFilter() {
+        return !groupFilterField.isEmpty() || !domainFilterField.isEmpty();
     }
 
     private void onGroupingFilterChanged() {
-        ReportGrouping current = groupingField.getValue();
-        if ((current == ReportGrouping.BY_GROUP &amp;&amp; !groupFilterField.isEmpty())
-                || (current == ReportGrouping.BY_DOMAIN &amp;&amp; !domainFilterField.isEmpty())) {
-            // Listener режима сам обновит доступность вариантов и перезагрузит список.
+        if (hasGroupingFilter() &amp;&amp; groupingField.getValue() != ReportGrouping.NONE) {
+            // Listener режима сам обновит доступность select и перезагрузит список.
             groupingField.setValue(ReportGrouping.NONE);
         } else {
-            refreshGroupingItemsEnabled();
+            refreshGroupingEnabled();
             reloadReports();
         }
     }
@@ -374,12 +382,12 @@ import uz.kapitalbank.umida.entity.ReportListRow;</code></pre>
         row.setDomain(userReport.getDomain() == null ? null : userReport.getDomain().getInstanceName());
         return row;
     }</code></pre>
-<h3>3.6 Filtrlar o‘zgarganda variantlarni yangilash</h3>
+<h3>3.6 Filtrlar o‘zgarganda selectni yangilash</h3>
 <p>Mavjud <code>initFilterListeners()</code>ni quyidagicha yangilang. <code>reloadReports()</code> ichidagi <code>resettingFilters</code> tekshiruvi filtrlarni umumiy tozalashda faqat bitta yuklashni saqlaydi.</p>
 <pre><code>    private void initFilterListeners() {
         nameFilterField.addValueChangeListener(e -&gt; reloadReports());
         codeFilterField.addValueChangeListener(e -&gt; reloadReports());
-        // Фильтр блокирует группировку по тому же признаку; очистка снова открывает вариант.
+        // Любой из двух фильтров переводит список в «Все» и блокирует select целиком.
         groupFilterField.addValueChangeListener(e -&gt; onGroupingFilterChanged());
         domainFilterField.addValueChangeListener(e -&gt; onGroupingFilterChanged());
     }</code></pre>
@@ -464,9 +472,10 @@ uz.kapitalbank.umida.view.reporting/grouping.noDomain=Domensiz</code></pre>
 <li>Filtrlar (nom, kod, domen) va sahifalash guruhlangan rejimda ham ishlashini tekshiring.</li>
 <li>«По доменам»ni tanlang: hisobotlar domen sarlavhalari ostida chiqadi.</li>
 <li>«Все»ni tanlang: oddiy jadval va ustun bo'yicha saralash qaytadi.</li>
-<li>«По группам» faol paytda «Группа» filtrini tanlang: rejim «Все»ga o‘tadi va «По группам»ni sichqoncha yoki klaviatura bilan tanlab bo‘lmaydi. «По доменам» ochiq qoladi.</li>
-<li>«По доменам» faol paytda domen filtrini tanlang: rejim «Все»ga o‘tadi va «По доменам» bloklanadi. Ikkala filtr tanlanganda ikkala guruhlash varianti ham bloklanadi.</li>
-<li>Filtrlarni bittadan va umumiy tozalash tugmasi orqali tozalang: variantlar qayta ochiladi, rejim «Все» bo‘lib qoladi. Joriy variant qayta tanlanmaydi, boshqa ruxsat etilgan variantga o‘tish mumkin.</li>
+<li>«По группам» va «По доменам» rejimlarining har birida alohida guruh, so‘ng alohida domen filtrini tanlab tekshiring: har safar select «Все»ga o‘tib, butunlay bloklanishi va tekis jadval chiqishi kerak.</li>
+<li>Ikkala filtrni tanlang, keyin bittasini tozalang: select «Все» qiymatida bloklanganicha qolishi kerak.</li>
+<li>Ikkala filtrni bittadan yoki umumiy tozalash tugmasi orqali tozalang: select qayta ochiladi, qiymat «Все» bo‘lib qoladi. Endi «По группам» va «По доменам»ni tanlash mumkin.</li>
+<li>Faqat nom, kod yoki srez filtrini o‘zgartiring: guruhlash selecti ochiq qolishi kerak.</li>
 </ol>
 </main>
 </body>
