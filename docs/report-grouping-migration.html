@@ -31,6 +31,8 @@ th { background:var(--card); }
 <h1>Hisobotlarni guruhlash: boshqa tizimga ko'chirish</h1>
 <p class="lead">«Отчеты» sahifasi (Jmix 2.8, <code>ReportingMainView</code>) uchun pagination oldidagi «Все / По группам / По доменам» tanlovi</p>
 
+<div class="note"><b>Yangilangan qoida (19.10.2026):</b> inputdagi «Группа» yoki «Домен» filtridan bittasi tanlansa, pagination oldidagi <b>select to‘liq bloklanadi</b> va qiymati <b>«Все»</b> bo‘ladi. Alohida variantlarni bloklash ishlatilmaydi.</div>
+
 <h2>Nima qilinadi</h2>
 <ul>
 <li>Toolbar o'ng tomonida, pagination oldidan <b>select</b> qo'shiladi: <i>Все</i>, <i>По группам</i>, <i>По доменам</i>. <b>Standart qiymat — «По группам»</b>: sahifa ochilganda ro'yxat darhol guruhlar bo'yicha daraxt bo'lib chiqadi.</li>
@@ -64,6 +66,7 @@ th { background:var(--card); }
 <div class="note">Liquibase migratsiyasi <b>kerak emas</b>: <code>ReportListRow</code> faqat xotirada yashaydi (<code>@JmixEntity</code>, <code>@Entity</code>siz).</div>
 
 <h2><span class="step">1</span>DTO: <code>ReportListRow</code></h2>
+<p>Asl ma’lumot manbalari o‘zgarmaydi: guruh <code>userReport.getReport().getGroup()</code>dan, domen <code>userReport.getDomain()</code>dan olinadi. <code>ReportListRow</code> daraxt sarlavhalari va hisobot qatorlarini bir komponentda ko‘rsatish uchun kerak. Undagi <code>reportGroup</code> va <code>domain</code> maydonlari ekranga chiqariladigan matnlar; yangi bazaviy bog‘lanish emas.</p>
 <p>Paketni o'z tizimingizga moslang. Agar entity'lar boshqa paketda bo'lsa, XML'dagi <code>class="..."</code>ni ham o'zgartiring.</p>
 <pre><code>package uz.kapitalbank.umida.entity;
 
@@ -254,6 +257,13 @@ import uz.kapitalbank.umida.entity.ReportListRow;</code></pre>
 <pre><code>        initScopeFilter();
 
         initGrouping();</code></pre>
+<h3>Avvalgi versiyadan yangilash</h3>
+<ol>
+<li>Eski <code>refreshGroupingItemsEnabled()</code> metodi va <code>setItemEnabledProvider(...)</code> chaqiruvini olib tashlang.</li>
+<li>Ularning o‘rniga quyidagi <code>refreshGroupingEnabled()</code>, <code>hasGroupingFilter()</code> va <code>onGroupingFilterChanged()</code> metodlarini qo‘ying.</li>
+<li><code>initGrouping()</code> ichida boshlang‘ich qiymat berilgach hamda qiymat o‘zgarishi listenerida <code>refreshGroupingEnabled()</code> chaqirilsin.</li>
+<li>Guruh va domen filtrlari listenerlarini 3.6-bo‘limdagi kabi <code>onGroupingFilterChanged()</code>ga ulang.</li>
+</ol>
 <h3>3.5 Guruhlash logikasi</h3>
 <p><code>MetadataTools</code>, <code>DataManager</code> va <code>MessageBundle</code> view'da allaqachon inject qilingan bo'lishi kerak.</p>
 <pre><code>    /**
